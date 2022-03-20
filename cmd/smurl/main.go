@@ -34,7 +34,7 @@ func main() {
 	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt)
 
 	//Инициализация базы данных
-	smst, err := pgstore.NewSmurlStore(cfg.DNS, l)
+	smst, err := pgstore.NewSmurlStore(os.Getenv("DATABASE_URL"), l)
 	if err != nil {
 		log.Fatal(err)
 	}
