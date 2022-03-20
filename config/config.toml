@@ -1,6 +1,6 @@
 dns = "postgres://postgres:1110@postgres/test?sslmode=disable"
 port = ":1234"
-server_url = "http://localhost:1234/"
+server_url = "https://sanrise-smurl.herokuapp.com/"
 read_timeout = 30
 write_timeout = 30
 write_header_timeout = 30
