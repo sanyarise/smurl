@@ -1,0 +1,106 @@
+openapi: "3.0.0"
+
+info:
+ title: smurl
+ description: REST API to convert long urls in small urls
+ version: "1.0.0"
+
+servers:
+ - url: /
+
+paths:
+  /:
+    get:
+      summary: Home page
+      description: Home page
+      responses:
+        200:
+          description: OK
+        400:
+          description: bad request
+        500:
+          description: internal server error
+
+  /create:
+    post:
+      summary: Create small url
+      description: Create small url
+      requestBody:
+        description: json body
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ApiSmurl'
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiSmurl'
+        400:
+          description: bad request
+        500:
+          description: internal server error
+
+  /{small_url}:
+    get:
+      summary: Redirect
+      description: Redirect
+      parameters:
+        - name: small_url
+          description: small_url
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: OK
+        400:
+          description: bad request
+        500:
+          description: internal server error
+
+  /stat:
+    post:
+      summary: Get statistic
+      description: Get statistic
+      requestBody:
+        description: json body
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ApiSmurl'
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiSmurl'
+        400:
+          description: bad request
+        500:
+          description: internal server error
+
+components:
+  schemas:
+    ApiSmurl:
+      required:
+        - small_url
+        - admin_url
+        - long_url
+      properties:
+        small_url:
+          type: string
+        long_url:
+          type: string
+        admin_url:
+          type: string
+        count:
+          type: string
+        ip_info:
+          type: string
