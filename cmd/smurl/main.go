@@ -51,7 +51,7 @@ func main() {
 	router := routeropenapi.NewRouterOpenAPI(hs, l, cfg.ServerURL)
 
 	//Инициализация сервера
-	server := server.NewServer(cfg.Port, router, l, cfg.ReadTimeout, cfg.WriteTimeout, cfg.WriteHeaderTimeout)
+	server := server.NewServer(":"+os.Getenv("PORT"), router, l, cfg.ReadTimeout, cfg.WriteTimeout, cfg.WriteHeaderTimeout)
 
 	//Запуск сервера
 	server.Start(smr)
