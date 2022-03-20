@@ -56,7 +56,7 @@ func main() {
 	//Запуск сервера
 	server.Start(smr)
 	l.Info("Start server successfull",
-		zap.String("port ", cfg.Port))
+		zap.String("port ", ":"+os.Getenv("PORT")))
 
 	<-ctx.Done()
 
