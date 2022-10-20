@@ -37,6 +37,7 @@ func TestPostCreate(t *testing.T) {
 	if resp.StatusCode != http.StatusCreated {
 		t.Errorf("Expected statuscode %d, got statuscode %d", http.StatusCreated, resp.StatusCode)
 	}
+	resp.Body.Close()
 	buffer = new(bytes.Buffer)
 	params = url.Values{}
 	params.Set("long_url", "vk.com")
@@ -54,6 +55,7 @@ func TestPostCreate(t *testing.T) {
 	if resp.StatusCode != http.StatusBadRequest {
 		t.Errorf("Expected statuscode %d, got statuscode %d", http.StatusBadRequest, resp.StatusCode)
 	}
+	defer resp.Body.Close()
 
 	buffer = new(bytes.Buffer)
 	params = url.Values{}
@@ -72,6 +74,7 @@ func TestPostCreate(t *testing.T) {
 	if resp.StatusCode != http.StatusBadRequest {
 		t.Errorf("Expected statuscode %d, got statuscode %d", http.StatusBadRequest, resp.StatusCode)
 	}
+	defer resp.Body.Close()
 }
 
 func TestPostStat(t *testing.T) {
@@ -97,7 +100,7 @@ func TestPostStat(t *testing.T) {
 	if resp.StatusCode != http.StatusOK {
 		t.Errorf("Expected statuscode %d, got statuscode %d", http.StatusOK, resp.StatusCode)
 	}
-
+	resp.Body.Close()
 	buffer = new(bytes.Buffer)
 	params = url.Values{}
 	params.Set("admin_url", "")
@@ -114,6 +117,7 @@ func TestPostStat(t *testing.T) {
 	if resp.StatusCode != http.StatusBadRequest {
 		t.Errorf("Expected statuscode %d, got statuscode %d", http.StatusBadRequest, resp.StatusCode)
 	}
+	resp.Body.Close()
 	buffer = new(bytes.Buffer)
 	params = url.Values{}
 	params.Set("admin_url", "fasdfies")
@@ -130,6 +134,7 @@ func TestPostStat(t *testing.T) {
 	if resp.StatusCode != http.StatusBadRequest {
 		t.Errorf("Expected statuscode %d, got statuscode %d", http.StatusBadRequest, resp.StatusCode)
 	}
+	resp.Body.Close()
 }
 
 func TestGetSmallUrl(t *testing.T) {
@@ -149,6 +154,8 @@ func TestGetSmallUrl(t *testing.T) {
 		t.Errorf("Expected statuscode %d, got statuscode %d", http.StatusOK, resp.StatusCode)
 	}
 
+	resp.Body.Close()
+
 	r, _ = http.NewRequest("GET", srv.URL+"/ ", nil)
 	resp, err = cli.Do(r)
 	if err != nil {
@@ -157,6 +164,7 @@ func TestGetSmallUrl(t *testing.T) {
 	if resp.StatusCode != http.StatusBadRequest {
 		t.Errorf("Expected statuscode %d, got statuscode %d", http.StatusBadRequest, resp.StatusCode)
 	}
+	resp.Body.Close()
 	r, _ = http.NewRequest("GET", srv.URL+"/fsdfasdf", nil)
 	resp, err = cli.Do(r)
 	if err != nil {
@@ -165,6 +173,7 @@ func TestGetSmallUrl(t *testing.T) {
 	if resp.StatusCode != http.StatusBadRequest {
 		t.Errorf("Expected statuscode %d, got statuscode %d", http.StatusBadRequest, resp.StatusCode)
 	}
+	resp.Body.Close()
 }
 
 func TestGet(t *testing.T) {
@@ -184,4 +193,5 @@ func TestGet(t *testing.T) {
 	if resp.StatusCode != http.StatusOK {
 		t.Errorf("Expected statuscode %d, got statuscode %d", http.StatusOK, resp.StatusCode)
 	}
+	resp.Body.Close()
 }

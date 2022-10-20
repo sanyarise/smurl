@@ -12,8 +12,8 @@ run:
 linters:
   disable-all: true
   enable:
-    - deadcode
     - gocyclo
-    - gofmt
     - govet
     - whitespace
+    - bodyclose
+    - gofmt

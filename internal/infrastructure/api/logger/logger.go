@@ -55,5 +55,4 @@ func NewLogger(logLevel string) *Logger {
 	return &Logger{
 		Logger: logger,
 	}
-
 }
