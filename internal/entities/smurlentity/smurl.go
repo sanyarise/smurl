@@ -1,6 +1,6 @@
 package smurlentity
 
-//Внутренняя структура объекта Smurl
+// The internal structure of the Smurl object
 type Smurl struct {
 	SmallURL string `json:"small_url,omitempty"`
 	LongURL  string `json:"long_url,omitempty"`

@@ -10,7 +10,7 @@ import (
 	"go.uber.org/zap"
 )
 
-//Имитация ответов базы данных для тестов
+// Simulate database responses for tests
 var _ smurlrepo.SmurlStore = &Mockdb{}
 
 type Mockdb struct {

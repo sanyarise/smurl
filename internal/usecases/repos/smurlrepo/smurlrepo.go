@@ -11,7 +11,7 @@ import (
 	"go.uber.org/zap"
 )
 
-//Интерфейс-порт для связи с базой данных
+// Interface for communication with the database
 type SmurlStore interface {
 	CreateURL(ctx context.Context, ses smurlentity.Smurl) (*smurlentity.Smurl, error)
 	FindURL(ctx context.Context, url smurlentity.Smurl) (*smurlentity.Smurl, error)
@@ -31,10 +31,9 @@ func NewSmurlStorage(smurlStore SmurlStore, l *zap.Logger) *SmurlStorage {
 	}
 }
 
-//Промежуточный метод для перенаправления запроса на слой с базой данных
 func (ss *SmurlStorage) CreateURL(ctx context.Context, ses smurlentity.Smurl) (*smurlentity.Smurl, error) {
 	l := ss.logger
-	l.Debug("smurlrepo create url")
+	l.Debug("Smurlrepo CreateURL")
 
 	newSmurl, err := ss.smurlStore.CreateURL(ctx, ses)
 	if err != nil {
@@ -45,31 +44,29 @@ func (ss *SmurlStorage) CreateURL(ctx context.Context, ses smurlentity.Smurl) (*
 	return newSmurl, nil
 }
 
-//Промежуточный метод для перенаправления запроса на слой с базой данных
 func (ss *SmurlStorage) CreateStat(ctx context.Context, ses smurlentity.Smurl) (*smurlentity.Smurl, error) {
 	l := ss.logger
-	l.Debug("smurlrepo create stat")
-	//Сначала выполняем поиск малого урл в бд
+	l.Debug("Smurlrepo CreateStat")
+	// Search for a small url in the database
 	ru, err := ss.smurlStore.FindURL(ctx, ses)
 	if err != nil {
 		l.Error("",
 			zap.Error(err))
 		return nil, fmt.Errorf("error find small url: %s", err)
 	}
-	//Обновляем поле с счечиком посещений
+	// Update the hit counter field
 	ru.Count, err = helpers.CountUses(ru.Count, l)
 	if err != nil {
 		l.Error("",
 			zap.Error(err))
 	}
-	l.Debug("smurl after find and count ++",
+	l.Debug("Smurlrepo after find and count ++",
 		zap.Any(":", ru))
-	//Обновляем поле с информацией об IP
+	// Update the field with IP information
 	ru.IPInfo = ru.IPInfo + ses.IPInfo
-	l.Debug("ip info",
+	l.Debug("IP info",
 		zap.String(":", ru.IPInfo))
-	//Вызываем метод базы данных для обновления
-	//статистики
+	// Call the database method to update statistics
 	sus, err := ss.smurlStore.UpdateStat(ctx, *ru)
 	if err != nil {
 		l.Error("",
@@ -81,7 +78,7 @@ func (ss *SmurlStorage) CreateStat(ctx context.Context, ses smurlentity.Smurl) (
 
 func (ss *SmurlStorage) FindURL(ctx context.Context, url smurlentity.Smurl) (*smurlentity.Smurl, error) {
 	l := ss.logger
-	l.Debug("smurlrepo find url")
+	l.Debug("Smurlrepo FindURL")
 	ru, err := ss.smurlStore.FindURL(ctx, url)
 	if err != nil {
 		l.Error("",
@@ -91,10 +88,9 @@ func (ss *SmurlStorage) FindURL(ctx context.Context, url smurlentity.Smurl) (*sm
 	return ru, nil
 }
 
-//Промежуточный метод для перенаправления на слой с базой данных для получения статистики
 func (ss *SmurlStorage) ReadStat(ctx context.Context, ses smurlentity.Smurl) (*smurlentity.Smurl, error) {
 	l := ss.logger
-	l.Debug("smurlstorage Read stat")
+	l.Debug("Smurlstorage ReadStat")
 	rss, err := ss.smurlStore.ReadStat(ctx, ses)
 	if err != nil {
 		l.Error("",

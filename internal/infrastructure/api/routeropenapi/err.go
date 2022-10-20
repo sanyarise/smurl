@@ -6,7 +6,7 @@ import (
 	"github.com/go-chi/render"
 )
 
-//Структура объекта ответа с ошибкой
+// Error response object structure
 type ErrResponse struct {
 	Err            error `json:"-"`
 	HTTPStatusCode int   `json:"-"`

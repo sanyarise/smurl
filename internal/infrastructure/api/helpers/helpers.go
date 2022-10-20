@@ -12,14 +12,14 @@ import (
 	"go.uber.org/zap"
 )
 
-//Вспомогательная функция для проверки валидности длинного урл
+// CheckURL check the validity of a long url
 func CheckURL(longURL string) bool {
 	url, err := url.Parse(longURL)
 	return err == nil && url.Scheme != "" && url.Host != ""
 }
 
-//Вспомогательная функция для генерации случайной строки,
-//использующейся для уменьшенного и админского урл
+// RandString generate a random string,
+// used for minified and admin url
 func RandString(l *zap.Logger) string {
 	buf := make([]byte, 4)
 	_, err := rand.Read(buf)
@@ -31,8 +31,8 @@ func RandString(l *zap.Logger) string {
 	return fmt.Sprintf("%x", buf)
 }
 
-//Вспомогательная функция для увеличения счетчика
-//переходов по уменьшенному урл
+// CountUses increment the counter
+// transitions on a reduced url
 func CountUses(s string, l *zap.Logger) (string, error) {
 	l.Debug("CountUses")
 	count, err := strconv.Atoi(s)
@@ -50,8 +50,8 @@ func CountUses(s string, l *zap.Logger) (string, error) {
 	return s, nil
 }
 
-//Вспомогательная функция, позволяющая прочитать
-//информацию об ip адресе из реквеста
+// GetIP read information about
+// the ip address from the request
 func GetIP(r *http.Request) string {
 	rip := r.Header.Get("X-REAL-IP")
 	netIP := net.ParseIP(rip)

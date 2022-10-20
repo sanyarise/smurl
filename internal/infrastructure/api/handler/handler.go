@@ -11,13 +11,13 @@ import (
 )
 
 type Handlers struct {
-	sm     *smurlrepo.SmurlStorage
+	repo   *smurlrepo.SmurlStorage
 	logger *zap.Logger
 }
 
 func NewHandlers(sm *smurlrepo.SmurlStorage, l *zap.Logger) *Handlers {
 	h := &Handlers{
-		sm:     sm,
+		repo:   sm,
 		logger: l,
 	}
 	return h
@@ -31,13 +31,14 @@ type Smurl struct {
 	Count    string `json:"count,omitempty"`
 }
 
-//Обработчик эндпоинта для создания уменьшенного url
+// Endpoint handler for creating a minified url
 func (h *Handlers) CreateSmurlHandle(ctx context.Context, hss Smurl) (Smurl, error) {
 	l := h.logger
-	l.Debug("handlers create smurl handle")
+	l.Debug("Handlers create smurl handle")
 	ses := smurlentity.Smurl{LongURL: hss.LongURL}
-	//Вызов метода из слоя с интерфейсами
-	nses, err := h.sm.CreateURL(ctx, ses)
+
+	// Calling a method from a layer with interfaces
+	nses, err := h.repo.CreateURL(ctx, ses)
 	if err != nil {
 		l.Error("",
 			zap.Error(err))
@@ -50,18 +51,18 @@ func (h *Handlers) CreateSmurlHandle(ctx context.Context, hss Smurl) (Smurl, err
 	}, nil
 }
 
-//Обработчик эндпоинта для поиска в бд уменьшенного url, обновления
-//статистики и переадресации по найденному длинному адресу
+// Endpoint handler for searching the reduced url in the database, updating
+// statistics and redirects to the found long address
 func (h *Handlers) RedirectHandle(ctx context.Context, smallURL string, ip string) (Smurl, error) {
 	l := h.logger
-	l.Debug("handlers redirect handle")
+	l.Debug("Handlers redirect handle")
 
 	es := smurlentity.Smurl{
 		SmallURL: smallURL,
 		IPInfo:   ip,
 	}
-	//Вызов метода из слоя интерфейсов для создания статистики перед переходом по длиной ссылке
-	hs, err := h.sm.CreateStat(ctx, es)
+	// Calling a method from the interface layer to generate statistics before following a long link
+	hs, err := h.repo.CreateStat(ctx, es)
 	if err != nil {
 		l.Error("",
 			zap.Error(err))
@@ -73,16 +74,16 @@ func (h *Handlers) RedirectHandle(ctx context.Context, smallURL string, ip strin
 	}, nil
 }
 
-//Обработчик эндпоинта для поиска админского урл в бд и получения статистики
-//переходов по уменьшенному урл
+// Endpoint handler for searching the admin url in the database and getting statistics
+// transitions on a reduced url
 func (h *Handlers) GetStatHandle(ctx context.Context, sm Smurl) (Smurl, error) {
 	l := h.logger
-	l.Debug("handlers get stat handle")
+	l.Debug("Handlers get stat handle")
 	es := smurlentity.Smurl{
 		AdminURL: sm.AdminURL,
 	}
-	//Вызов метода для чтения статистики из слоя интерфейсов
-	cu, err := h.sm.ReadStat(ctx, es)
+	// Calling the method for reading statistics from the interface layer
+	cu, err := h.repo.ReadStat(ctx, es)
 	if err != nil {
 		l.Error("",
 			zap.Error(err))

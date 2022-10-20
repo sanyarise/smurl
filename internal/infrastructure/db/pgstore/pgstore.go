@@ -14,7 +14,7 @@ import (
 	"go.uber.org/zap"
 )
 
-//Слой для работы с базой данных Postgresql
+// Postgresql database layer
 var _ smurlrepo.SmurlStore = &SmurlStore{}
 
 type PgSmurl struct {
@@ -32,7 +32,7 @@ type SmurlStore struct {
 }
 
 func NewSmurlStore(dsn string, l *zap.Logger) (*SmurlStore, error) {
-	l.Debug("pgstore new smurl store")
+	l.Debug("Pgstore NewSmurlStore")
 	db, err := sql.Open("pgx", dsn)
 	if err != nil {
 		l.Error("error on sql open",
@@ -69,15 +69,15 @@ func NewSmurlStore(dsn string, l *zap.Logger) (*SmurlStore, error) {
 	return su, nil
 }
 func (su *SmurlStore) Close() {
-	su.logger.Debug("db close")
+	su.logger.Debug("DB close")
 	su.db.Close()
 }
 
-//Метод для сохранения длинного урл, короткого урл и админского урл в базу данных
+// CreateURL saving long url, short url and admin url to database
 func (ss *SmurlStore) CreateURL(ctx context.Context, ses smurlentity.Smurl) (*smurlentity.Smurl, error) {
 	l := ss.logger
-	l.Debug("pgstore create url")
-	//Создание короткого и админского урл
+	l.Debug("Pgstore CreateURL")
+	// Create a short and admin url
 	smallURL := helpers.RandString(l)
 	adminURL := helpers.RandString(l)
 
@@ -89,13 +89,13 @@ func (ss *SmurlStore) CreateURL(ctx context.Context, ses smurlentity.Smurl) (*sm
 		Count:     "0",
 		IPInfo:    "",
 	}
-	//Начало транзакции для записи данных в бд
+	// Starting a transaction to write data to the database
 	tx, err := ss.db.Begin()
 	if err != nil {
 		l.Error("error on begin transaction",
 			zap.Error(err))
 	}
-	//Запись в бд
+	// Write to database
 	_, err = tx.ExecContext(ctx, `INSERT INTO smurls
 	(small_url, created_at, long_url, admin_url, count, ip_info)
 	values ($1, $2, $3, $4, $5, $6)`,
@@ -107,54 +107,52 @@ func (ss *SmurlStore) CreateURL(ctx context.Context, ses smurlentity.Smurl) (*sm
 		pgs.IPInfo,
 	)
 	if err != nil {
-		//Возврат к исходному значению
-		//в случае неудачной записи
+		//Return to original value in case of unsuccessful write
 		tx.Rollback()
 		l.Error("error on insert values into table",
 			zap.Error(err))
 		return nil, err
 	}
-	//Завершение транзакции
+	// End of transaction
 	tx.Commit()
-	l.Debug("pg store create smurl successfull")
-	//Возвращаем объект с коротким и админским урл
+	l.Debug("Pgstore create smurl successfull")
+	// Return object with short and admin url
 	return &smurlentity.Smurl{
 		SmallURL: pgs.SmallURL,
 		AdminURL: pgs.AdminURL,
 	}, nil
 }
 
-//Метод для обновления данных статистики при переходе по уменьшенному урл
+// UpdateStat updating statistics data when clicking on a reduced url
 func (ss *SmurlStore) UpdateStat(ctx context.Context, ses smurlentity.Smurl) (*smurlentity.Smurl, error) {
 	l := ss.logger
-	l.Debug("pgstore update stat")
+	l.Debug("Pgstore UpdateStat")
 	pgs := &PgSmurl{
 		LongURL:  ses.LongURL,
 		Count:    ses.Count,
 		IPInfo:   ses.IPInfo,
 		SmallURL: ses.SmallURL,
 	}
-	//Начало транзакции для записи обновленных данных
+	// Starting a transaction to write updated data
 	tx, err := ss.db.Begin()
 	if err != nil {
 		l.Error("error on begin transaction",
 			zap.Error(err))
 	}
-	//Запись обновленных данных
+	// Write updated data
 	_, err = tx.ExecContext(ctx, `UPDATE smurls SET count = $1, ip_info = $2
 	WHERE small_url = $3`, pgs.Count, pgs.IPInfo, pgs.SmallURL)
 	if err != nil {
 		l.Error("error on update values into table",
 			zap.Error(err))
 
-		//Возврат к исходному значению
-		//в случае неудачной записи
+		// Return to original value in case of unsuccessful write
 		tx.Rollback()
 		return nil, err
 	}
-	//Завершение транзакции
+	// End of transaction
 	tx.Commit()
-	l.Debug("pg store update stat successfull")
+	l.Debug("Pgstore update stat successfull")
 
 	return &smurlentity.Smurl{
 		LongURL: pgs.LongURL,
@@ -163,12 +161,12 @@ func (ss *SmurlStore) UpdateStat(ctx context.Context, ses smurlentity.Smurl) (*s
 	}, nil
 }
 
-//Метод для чтения данных статистики
+// ReadStat reads statistics data
 func (ss *SmurlStore) ReadStat(ctx context.Context, ses smurlentity.Smurl) (*smurlentity.Smurl, error) {
 	l := ss.logger
-	l.Debug("pgstore read stat")
+	l.Debug("Pgstore ReadStat")
 	pgs := &PgSmurl{}
-	//Выполняем поиск по базе данных
+	// Performing a database search
 	rows, err := ss.db.QueryContext(ctx,
 		`SELECT small_url, long_url, admin_url, count, ip_info FROM smurls
 	 WHERE admin_url = $1`, ses.AdminURL)
@@ -204,15 +202,15 @@ func (ss *SmurlStore) ReadStat(ctx context.Context, ses smurlentity.Smurl) (*smu
 		Count:    pgs.Count,
 		IPInfo:   pgs.IPInfo,
 	}
-	l.Debug("pg store read stat successfull")
+	l.Debug("Pgstore read stat successfull")
 
 	return sms, nil
 }
 
-//Метод для поиска малого урл в базе данных
+// FindURL search small url in database
 func (ss *SmurlStore) FindURL(ctx context.Context, ses smurlentity.Smurl) (*smurlentity.Smurl, error) {
 	l := ss.logger
-	l.Debug("pg store find url")
+	l.Debug("Pgstore FindUrl")
 
 	pgs := &PgSmurl{}
 	rows, err := ss.db.QueryContext(ctx,
@@ -236,12 +234,12 @@ func (ss *SmurlStore) FindURL(ctx context.Context, ses smurlentity.Smurl) (*smur
 		}
 	}
 	if pgs.SmallURL == "" {
-		err = fmt.Errorf("small_url not found")
+		err = fmt.Errorf("small url not found")
 		l.Error("",
 			zap.Error(err))
 		return nil, err
 	}
-	l.Debug("pg store find url successfull")
+	l.Debug("Pgstore find url successfull")
 	return &smurlentity.Smurl{
 		SmallURL: ses.SmallURL,
 		LongURL:  pgs.LongURL,

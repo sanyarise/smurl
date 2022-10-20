@@ -59,10 +59,10 @@ func (Smurl) Render(w http.ResponseWriter, r *http.Request) error {
 	return nil
 }
 
-//Метод для отображения стартовой страницы
+// Get method displaying the start page
 func (roa *RouterOpenAPI) Get(w http.ResponseWriter, r *http.Request) {
 	l := roa.logger
-	l.Debug("enter in router get")
+	l.Debug("Enter in router Get")
 	w.WriteHeader(http.StatusOK)
 
 	tmpl, err := template.ParseFiles("./static/home.tmpl")
@@ -95,15 +95,15 @@ func (roa *RouterOpenAPI) Get(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-//Метод для создания уменьшенного урл.
+// PostCreate creating a minified url
 func (roa *RouterOpenAPI) PostCreate(w http.ResponseWriter, r *http.Request) {
 	l := roa.logger
-	l.Debug("router post create")
-	//Считываем длинный адрес из тела запроса
+	l.Debug("Router PostCreate")
+	// Reading the long address from the request body
 	longURL := r.FormValue("long_url")
-	msg := fmt.Sprintf("longURL: %s", longURL)
+	msg := fmt.Sprintf("LongURL: %s", longURL)
 	l.Debug(msg)
-	//Проверяем валидность длинного адреса
+	// Checking the validity of a long address
 	ok := helpers.CheckURL(longURL)
 	if !ok {
 		l.Error("incorrect long url")
@@ -115,7 +115,7 @@ func (roa *RouterOpenAPI) PostCreate(w http.ResponseWriter, r *http.Request) {
 		}
 		return
 	}
-	//Создаем реквест с JSON
+	// Create a request with JSON
 	url := roa.url + "create"
 
 	str := fmt.Sprintf(`{"long_url":"%s"}`, longURL)
@@ -134,7 +134,7 @@ func (roa *RouterOpenAPI) PostCreate(w http.ResponseWriter, r *http.Request) {
 	}
 
 	hsu := Smurl{LongURL: longURL}
-	//Вызываем обработчик для создания уменьшенного урл
+	// Calling the handler to create a reduced url
 	hss, err := roa.hs.CreateSmurlHandle(r.Context(), handler.Smurl(hsu))
 	if err != nil {
 		msg := fmt.Sprintf("create smurl error %s: ", err)
@@ -147,11 +147,11 @@ func (roa *RouterOpenAPI) PostCreate(w http.ResponseWriter, r *http.Request) {
 		}
 		return
 	}
-	l.Debug("create smurl successfull")
+	l.Debug("Create smurl successfull")
 	w.WriteHeader(http.StatusCreated)
-	//Записываем полный адрес в полученную структуру
+	// Write the full address to the resulting structure
 	hss.SmallURL = roa.url + hss.SmallURL
-	//Вызываем функцию для рендеринга страницы с результатом
+	// Call the function to render the page with the result
 	err = ResultPage(w, "./static/result.tmpl", hss)
 	if err != nil {
 		l.Error("",
@@ -160,24 +160,25 @@ func (roa *RouterOpenAPI) PostCreate(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-//Метод для перехода по уменьшенному урл, полученному из строки запроса
+// GetSmallUrl following the reduced url received from the query string
 func (roa *RouterOpenAPI) GetSmallUrl(w http.ResponseWriter, r *http.Request, u string) {
 	l := roa.logger
-	l.Debug("router get small url")
-	//Отсекаем некорректные адреса
+	l.Debug("Router GetSmallUrl")
+	// Cut off incorrect addresses
 	if len(u) != 8 {
-		l.Debug(fmt.Sprintf("incorrect small url %s", u))
+		l.Debug(fmt.Sprintf("Incorrect small url %s", u))
 		err := ErrorPage(w, "./static/400.tmpl")
 		if err != nil {
 			render.Render(w, r, ErrInvalidRequest(err))
 		}
 		return
 	}
-	//Получаем информацию об IP
-	ip := helpers.GetIP(r) + " "
-	//Вызываем обработчик для поиска маленького урл,
-	//поиска соответствующего длинного урл, обновления
-	//статистики
+	// Getting information about IP
+	ip := helpers.GetIP(r) + "\n"
+
+	// Call the handler to search for a small url,
+	// search for the corresponding long url, update
+	// statistics
 	red, err := roa.hs.RedirectHandle(r.Context(), u, ip)
 	if err != nil {
 		l.Error("",
@@ -190,20 +191,19 @@ func (roa *RouterOpenAPI) GetSmallUrl(w http.ResponseWriter, r *http.Request, u 
 		}
 		return
 	}
-	msg := fmt.Sprintf("redirect on url %s successfull", red.LongURL)
+	msg := fmt.Sprintf("Redirect on url %s successfull", red.LongURL)
 	l.Debug(msg)
-	//Осуществляем перенаправление по найденному длинному адресу
+	// Redirect to the found long address
 	http.Redirect(w, r, red.LongURL, http.StatusTemporaryRedirect)
 }
 
-//Метод для отображения статистики при получении запроса с админским
-//урл
+// PostStat displaying statistics when receiving a request from the admin url
 func (roa *RouterOpenAPI) PostStat(w http.ResponseWriter, r *http.Request) {
 	l := roa.logger
-	l.Debug("router post stat")
-	//Считываем админский урл из реквеста
+	l.Debug("Router PostStat")
+	// Read the admin url from the request
 	adminURL := r.FormValue("admin_url")
-	//Формируем реквест с JSON
+	// Form a request with JSON
 	url := roa.url + "stat"
 
 	str := fmt.Sprintf(`{"admin_url":"%s"}`, adminURL)
@@ -220,7 +220,7 @@ func (roa *RouterOpenAPI) PostStat(w http.ResponseWriter, r *http.Request) {
 	}
 
 	smurl := Smurl{AdminURL: adminURL}
-	//Вызываем обработчик для получения статистики
+	// Сall the handler to get statistics
 	gd, err := roa.hs.GetStatHandle(r.Context(), handler.Smurl(smurl))
 	if err != nil {
 		l.Error("",
@@ -234,7 +234,7 @@ func (roa *RouterOpenAPI) PostStat(w http.ResponseWriter, r *http.Request) {
 	}
 	gd.SmallURL = roa.url + gd.SmallURL
 	w.WriteHeader(http.StatusOK)
-	//Вызываем функцию для отображения результата
+	// Call the function to display the result
 	err = ResultPage(w, "./static/statistics.tmpl", gd)
 	if err != nil {
 		l.Error("",
@@ -247,7 +247,7 @@ func (roa *RouterOpenAPI) PostStat(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-//Вспомогательная функция для отображения страницы с ошибкой
+// ErrorPage display the error page
 func ErrorPage(w http.ResponseWriter, page string) error {
 	ts, err := template.ParseFiles(page)
 	if err != nil {
@@ -260,7 +260,7 @@ func ErrorPage(w http.ResponseWriter, page string) error {
 	return nil
 }
 
-//Вспомогательная функция для отображения страницы с результатом
+// ResultPage display result page
 func ResultPage(w http.ResponseWriter, page string, smurl handler.Smurl) error {
 	ts, err := template.ParseFiles(page)
 	if err != nil {

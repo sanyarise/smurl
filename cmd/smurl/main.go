@@ -18,7 +18,7 @@ import (
 )
 
 func main() {
-	log.Printf("start load configuration.\n")
+	log.Printf("Start load configuration\n")
 
 	// Config init
 	cfg := config.NewConfig()
@@ -28,7 +28,7 @@ func main() {
 	defer l.Logger.Sync()
 	logger := l.Logger
 
-	logger.Info("configuration file successfully load.")
+	logger.Info("Configuration file successfully load")
 
 	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt)
 
@@ -52,7 +52,7 @@ func main() {
 	// Start server
 	server.Start(smr)
 	logger.Info("Start server successfull",
-		zap.String("port ", ":"+cfg.Port))
+		zap.String("Port ", ":"+cfg.Port))
 
 	<-ctx.Done()
 
@@ -60,7 +60,7 @@ func main() {
 	server.Stop()
 	logger.Info("Server stopped successfull")
 	cancel()
-	
+
 	// Database shutdown
 	smst.Close()
 }

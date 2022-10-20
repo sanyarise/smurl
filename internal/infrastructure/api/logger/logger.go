@@ -13,8 +13,8 @@ type Logger struct {
 
 func NewLogger(logLevel string) *Logger {
 	atomicLevel := zap.NewAtomicLevel()
-	//Установка уровня логирования на основании данных из
-	//файла конфигурации
+
+	// Setting the logging level based on data from config
 	switch logLevel {
 	case "info":
 		{
@@ -41,7 +41,7 @@ func NewLogger(logLevel string) *Logger {
 			atomicLevel.SetLevel(zap.FatalLevel)
 		}
 	}
-	//Установка параметров логгера
+	// Setting logger parameters
 	encoderCfg := zap.NewProductionEncoderConfig()
 	encoderCfg.EncodeTime = zapcore.RFC3339TimeEncoder
 	encoderCfg.EncodeLevel = zapcore.CapitalLevelEncoder
@@ -55,5 +55,5 @@ func NewLogger(logLevel string) *Logger {
 	return &Logger{
 		Logger: logger,
 	}
-	
+
 }
