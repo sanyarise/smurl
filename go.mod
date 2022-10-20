@@ -5,6 +5,7 @@ go 1.17
 
 require (
 	github.com/BurntSushi/toml v1.0.0
+	github.com/caarlos0/env/v6 v6.10.1
 	github.com/deepmap/oapi-codegen v1.9.1
 	github.com/getkin/kin-openapi v0.92.0
 	github.com/go-chi/chi/v5 v5.0.7

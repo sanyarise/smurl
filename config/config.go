@@ -3,81 +3,50 @@ package config
 import (
 	"flag"
 	"log"
-	"os"
+	"sync"
 
 	"github.com/BurntSushi/toml"
-	"go.uber.org/zap"
-	"go.uber.org/zap/zapcore"
+	"github.com/caarlos0/env/v6"
 )
 
-//Структура конфигурации
 type Config struct {
-	DNS                string `toml:"dns" default:"postgres://postgres:1110@localhost/test?sslmode=disable"`
-	Port               string `toml:"port" default:":8000"`
-	ServerURL          string `toml:"server_url" default:"http://localhost/"`
-	ReadTimeout        int    `toml:"read_timeout" default:"30"`
-	WriteTimeout       int    `toml:"write_timeout" default:"30"`
-	WriteHeaderTimeout int    `toml:"write_header_timeout" default:"30"`
-	Logger             *zap.Logger
-	LogLevel           int `toml:"log_level" default:"2"`
+	DNS                string `toml:"dns" env:"DATABASE_URL" envDefault:"postgres://postgres:1110@localhost/test?sslmode=disable"`
+	Port               string `toml:"port" env:"PORT" envDefault:":8000"`
+	ServerURL          string `toml:"server_url" env:"SERVER_URL" envDefault:"http://localhost/"`
+	ReadTimeout        int    `toml:"read_timeout" env:"READ_TIMEOUT" envDefault:"30"`
+	WriteTimeout       int    `toml:"write_timeout" env:"WRITE_TIMEOUT" envDefault:"30"`
+	WriteHeaderTimeout int    `toml:"write_header_timeout" env:"WRITE_HEADER_TIMEOUT" envDefault:"30"`
+	LogLevel           string `toml:"log_level" env:"LOG_LEVEL" envDefault:"debug"`
 }
 
-//Функция для инициализации конфигурации
-func InitConfig() (*Config, error) {
-	var configPath string
+var (
+	cfg  Config
+	once sync.Once
+)
 
-	//При запуске без флага с указанием пути с файлом конфигурации
-	//по умолчанию путь "./config/config.toml"
-	flag.StringVar(&configPath, "config-path", "./config/config.toml", "path to file in .toml format")
-	flag.Parse()
+func NewConfig() *Config {
+	// Config loaded. Once
+	once.Do(func() {
+		var configPath string
 
-	var cfg = Config{}
-	//Декодирование файла конфигурации
-	s, err := toml.DecodeFile(configPath, &cfg)
-	if err != nil {
-		log.Fatalf("can't load configuration file: %s", err)
-	}
-	log.Printf("load config successful %v", s)
-	atomicLevel := zap.NewAtomicLevel()
-	//Установка уровня логирования на основании данных из
-	//файла конфигурации
-	switch cfg.LogLevel {
-	case 0:
-		{
-			atomicLevel.SetLevel(zap.InfoLevel)
-		}
-	case 1:
-		{
-			atomicLevel.SetLevel(zap.WarnLevel)
-		}
-	case 2:
-		{
-			atomicLevel.SetLevel(zap.DebugLevel)
-		}
-	case 3:
-		{
-			atomicLevel.SetLevel(zap.ErrorLevel)
-		}
-	case 4:
-		{
-			atomicLevel.SetLevel(zap.PanicLevel)
-		}
-	case 5:
-		{
-			atomicLevel.SetLevel(zap.FatalLevel)
-		}
-	}
-	//Установка параметров логгера
-	encoderCfg := zap.NewProductionEncoderConfig()
-	encoderCfg.EncodeTime = zapcore.RFC3339TimeEncoder
-	encoderCfg.EncodeLevel = zapcore.CapitalColorLevelEncoder
-	encoderCfg.EncodeCaller = zapcore.ShortCallerEncoder
+		// When launched with flag, specifying the path with the configuration file
+		// config loaded from .toml file
+		flag.StringVar(&configPath, "config-path", "", "path to file in .toml format")
+		flag.Parse()
 
-	logger := zap.New(zapcore.NewCore(
-		zapcore.NewConsoleEncoder(encoderCfg),
-		zapcore.Lock(os.Stdout),
-		atomicLevel,
-	), zap.AddCaller())
-	cfg.Logger = logger
-	return &cfg, err
+		// Loaded environment variables
+		if err := env.Parse(&cfg); err != nil {
+			log.Fatalf("Can't load environment variables: %s", err)
+		}
+
+		if configPath != "" {
+			// Config file decoding
+			_, err := toml.DecodeFile(configPath, &cfg)
+			if err != nil {
+				log.Fatalf("Can't load configuration file: %v", err)
+			}
+		}
+		log.Printf("Load config successful %v", cfg)
+	})
+	return &cfg
 }

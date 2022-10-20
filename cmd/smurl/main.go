@@ -8,6 +8,7 @@ import (
 
 	"github.com/sanyarise/smurl/config"
 	"github.com/sanyarise/smurl/internal/infrastructure/api/handler"
+	"github.com/sanyarise/smurl/internal/infrastructure/api/logger"
 	"github.com/sanyarise/smurl/internal/infrastructure/api/routeropenapi"
 	"github.com/sanyarise/smurl/internal/infrastructure/db/pgstore"
 	"github.com/sanyarise/smurl/internal/infrastructure/server"
@@ -19,51 +20,47 @@ import (
 func main() {
 	log.Printf("start load configuration.\n")
 
-	//Инициализация конфигурации
-	cfg, err := config.InitConfig()
-	if err != nil {
-		log.Fatalf("Error on load config %v\n", err)
-	}
+	// Config init
+	cfg := config.NewConfig()
 
-	defer cfg.Logger.Sync()
+	// Logger init
+	l := logger.NewLogger(cfg.LogLevel)
+	defer l.Logger.Sync()
+	logger := l.Logger
 
-	l := cfg.Logger
-
-	l.Info("configuration file successfully load.")
+	logger.Info("configuration file successfully load.")
 
 	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt)
 
-	//Инициализация базы данных
-	smst, err := pgstore.NewSmurlStore(os.Getenv("DATABASE_URL"), l)
+	// Database init
+	smst, err := pgstore.NewSmurlStore(cfg.DNS, logger)
 	if err != nil {
 		log.Fatal(err)
 	}
-	//Инициализация слоя с интерфейсами
-	smr := smurlrepo.NewSmurlStorage(smst, l)
+	// Interface layer init
+	smr := smurlrepo.NewSmurlStorage(smst, logger)
 
-	//Инициализация хэндлеров
-	hs := handler.NewHandlers(smr, l)
+	// Handlers init
+	hs := handler.NewHandlers(smr, logger)
 
-	//router := smurlapi.NewRouterChi(hs, l) - инициализация рукописного
-	//роутера chi
+	// Router init
+	router := routeropenapi.NewRouterOpenAPI(hs, logger, cfg.ServerURL)
 
-	//Инициализация сгенерированного роутера chi
-	router := routeropenapi.NewRouterOpenAPI(hs, l, cfg.ServerURL)
+	// Server init
+	server := server.NewServer(":"+cfg.Port, router, logger, cfg.ReadTimeout, cfg.WriteTimeout, cfg.WriteHeaderTimeout)
 
-	//Инициализация сервера
-	server := server.NewServer(":"+os.Getenv("PORT"), router, l, cfg.ReadTimeout, cfg.WriteTimeout, cfg.WriteHeaderTimeout)
-
-	//Запуск сервера
+	// Start server
 	server.Start(smr)
-	l.Info("Start server successfull",
-		zap.String("port ", ":"+os.Getenv("PORT")))
+	logger.Info("Start server successfull",
+		zap.String("port ", ":"+cfg.Port))
 
 	<-ctx.Done()
 
-	//Остановка сервера при получении сигнала о завершении контекста
+	// Stopping the server when receiving a context termination signal
 	server.Stop()
-	l.Info("Server stopped successfull")
+	logger.Info("Server stopped successfull")
 	cancel()
-	//Завершение работы базы данных
+	
+	// Database shutdown
 	smst.Close()
 }
