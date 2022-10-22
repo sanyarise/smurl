@@ -2,7 +2,6 @@ package helpers
 
 import (
 	"crypto/rand"
-	"fmt"
 	"net"
 	"net/http"
 	"net/url"
@@ -22,13 +21,28 @@ func CheckURL(longURL string) bool {
 // used for minified and admin url
 func RandString(l *zap.Logger) string {
 	buf := make([]byte, 4)
-	_, err := rand.Read(buf)
+	num, err := rand.Read(buf)
 	if err != nil {
-		l.Error("error on rand.read(buf)",
+		l.Error("error on rand.Read(buf)",
 			zap.Error(err))
 		return ""
 	}
-	return fmt.Sprintf("%x", buf)
+	res := Base62Encode(uint64(num))
+	return res
+}
+
+func Base62Encode(number uint64) string {
+	const (
+		alphabet = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
+	)
+	length := len(alphabet)
+	var encodedBuilder strings.Builder
+	encodedBuilder.Grow(10)
+	for ; number > 0; number = number / uint64(length) {
+		encodedBuilder.WriteByte(alphabet[(number % uint64(length))])
+	}
+
+	return encodedBuilder.String()
 }
 
 // CountUses increment the counter
