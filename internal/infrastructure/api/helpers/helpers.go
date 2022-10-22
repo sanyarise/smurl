@@ -20,7 +20,7 @@ func CheckURL(longURL string) bool {
 // RandString generate a random string,
 // used for minified and admin url
 func RandString(l *zap.Logger) string {
-	buf := make([]byte, 4)
+	buf := make([]byte, 8)
 	num, err := rand.Read(buf)
 	if err != nil {
 		l.Error("error on rand.Read(buf)",
