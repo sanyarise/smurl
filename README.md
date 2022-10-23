@@ -8,7 +8,7 @@
 ![GitHub last commit](https://img.shields.io/github/last-commit/sanyarise/smurl)
 ![GitHub issues](https://img.shields.io/github/issues/sanyarise/smurl)
 
-<img align="right" width="50%" src="./images/gopher.png">
+<img align="right" width="50%" src="./static/images/gopher.png">
 
 # smurl 
 ## Description
@@ -35,6 +35,6 @@ Implementation on heroku.com at https://sanrise-smurl.herokuapp.com/
 
 ## Screenshot
 
-<img src="./images/smurl.png">
+<img src="./static/images/smurl.jpg">
 
  
