@@ -3,7 +3,6 @@ package helpers
 import (
 	"crypto/rand"
 	"fmt"
-	"log"
 	"net"
 	"net/http"
 	"net/url"
@@ -14,8 +13,8 @@ import (
 )
 
 // CheckURL check the validity of a long url
-func CheckURL(longURL string) bool {
-	log.Println("Enter in CheckURL")
+func CheckURL(longURL string, l *zap.Logger) bool {
+	l.Debug("Enter in func CheckURL()")
 	url, err := url.Parse(longURL)
 	return err == nil && url.Scheme != "" && url.Host != ""
 }
@@ -23,6 +22,7 @@ func CheckURL(longURL string) bool {
 // RandString generate a random string,
 // used for minified and admin url
 func RandString(l *zap.Logger) string {
+	l.Debug("Enter in func RandString()")
 	buf := make([]byte, 4)
 	_, err := rand.Read(buf)
 	if err != nil {
@@ -30,13 +30,14 @@ func RandString(l *zap.Logger) string {
 			zap.Error(err))
 		return ""
 	}
+	l.Debug("Random String generate success")
 	return fmt.Sprintf("%x", buf)
 }
 
 // CountUses increment the counter
 // transitions on a reduced url
 func CountUses(s string, l *zap.Logger) (string, error) {
-	l.Debug("CountUses")
+	l.Debug("Enter in func CountUses()")
 	count, err := strconv.Atoi(s)
 	if err != nil {
 		l.Error("",
@@ -54,7 +55,8 @@ func CountUses(s string, l *zap.Logger) (string, error) {
 
 // GetIP read information about
 // the ip address from the request
-func GetIP(r *http.Request) string {
+func GetIP(r *http.Request, l *zap.Logger) string {
+	l.Debug("Enter in func GetIP()")
 	rip := r.Header.Get("X-REAL-IP")
 	netIP := net.ParseIP(rip)
 	if netIP != nil {

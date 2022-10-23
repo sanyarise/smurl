@@ -65,7 +65,7 @@ func (Smurl) Render(w http.ResponseWriter, r *http.Request) error {
 // Get method displaying the start page
 func (roa *RouterOpenAPI) Get(w http.ResponseWriter, r *http.Request) {
 	l := roa.logger
-	l.Debug("Enter in router Get")
+	l.Debug("Enter in router func Get()")
 	w.WriteHeader(http.StatusOK)
 
 	tmpl, err := template.ParseFiles("./static/home.tmpl")
@@ -73,7 +73,7 @@ func (roa *RouterOpenAPI) Get(w http.ResponseWriter, r *http.Request) {
 		msg := fmt.Sprintf("error on template parse home page files:%s", err)
 		l.Error(msg)
 		w.WriteHeader(http.StatusInternalServerError)
-		pErr := ErrorPage(w, "./static/500.tmpl", roa.url)
+		pErr := ErrorPage(w, "./static/500.tmpl", roa.url, l)
 		if pErr != nil {
 			msg = fmt.Sprintf("error on error page func: %s", err)
 			l.Error(msg)
@@ -88,7 +88,7 @@ func (roa *RouterOpenAPI) Get(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		msg := fmt.Sprintf("error on execute home page files: %s", err)
 		l.Error(msg)
-		pErr := ErrorPage(w, "./static/500.tmpl", roa.url)
+		pErr := ErrorPage(w, "./static/500.tmpl", roa.url, l)
 		if pErr != nil {
 			msg = fmt.Sprintf("error on execute home page files: %s", err)
 			l.Error(msg)
@@ -101,16 +101,16 @@ func (roa *RouterOpenAPI) Get(w http.ResponseWriter, r *http.Request) {
 // PostCreate creating a minified url
 func (roa *RouterOpenAPI) PostCreate(w http.ResponseWriter, r *http.Request) {
 	l := roa.logger
-	l.Debug("Router PostCreate")
+	l.Debug("Enter in router func PostCreate()")
 	// Reading the long address from the request body
 	longURL := r.FormValue("long_url")
 	msg := fmt.Sprintf("LongURL: %s", longURL)
 	l.Debug(msg)
 	// Checking the validity of a long address
-	ok := helpers.CheckURL(longURL)
+	ok := helpers.CheckURL(longURL, l)
 	if !ok {
 		l.Error("incorrect long url")
-		pErr := ErrorPage(w, "./static/400.tmpl", roa.url)
+		pErr := ErrorPage(w, "./static/400.tmpl", roa.url, l)
 		if pErr != nil {
 			msg := fmt.Sprint(pErr)
 			l.Error(msg)
@@ -130,7 +130,7 @@ func (roa *RouterOpenAPI) PostCreate(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		msg := fmt.Sprintf("error on create new request: %s", err)
 		l.Error(msg)
-		pErr := ErrorPage(w, "./static/500.tmpl", roa.url)
+		pErr := ErrorPage(w, "./static/500.tmpl", roa.url, l)
 		if pErr != nil {
 			render.Render(w, r, ErrRender(err))
 		}
@@ -144,7 +144,7 @@ func (roa *RouterOpenAPI) PostCreate(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		msg := fmt.Sprintf("create smurl error %s: ", err)
 		l.Error(msg)
-		pErr := ErrorPage(w, "./static/400.tmpl", roa.url)
+		pErr := ErrorPage(w, "./static/400.tmpl", roa.url, l)
 		if pErr != nil {
 			msg := fmt.Sprint(pErr)
 			l.Error(msg)
@@ -157,7 +157,7 @@ func (roa *RouterOpenAPI) PostCreate(w http.ResponseWriter, r *http.Request) {
 	// Write the full address to the resulting structure
 	hss.SmallURL = roa.url + hss.SmallURL
 	// Call the function to render the page with the result
-	err = ResultPage(w, "./static/result.tmpl", hss, roa.url)
+	err = ResultPage(w, "./static/result.tmpl", hss, roa.url, l)
 	if err != nil {
 		l.Error("",
 			zap.Error(err))
@@ -168,18 +168,18 @@ func (roa *RouterOpenAPI) PostCreate(w http.ResponseWriter, r *http.Request) {
 // GetSmallUrl following the reduced url received from the query string
 func (roa *RouterOpenAPI) GetSmallUrl(w http.ResponseWriter, r *http.Request, u string) {
 	l := roa.logger
-	l.Debug("Router GetSmallUrl")
+	l.Debug("Enter in router func GetSmallUrl()")
 	// Cut off incorrect addresses
 	if len(u) != 8 {
 		l.Debug(fmt.Sprintf("Incorrect small url %s", u))
-		err := ErrorPage(w, "./static/400.tmpl", roa.url)
+		err := ErrorPage(w, "./static/400.tmpl", roa.url, l)
 		if err != nil {
 			render.Render(w, r, ErrInvalidRequest(err))
 		}
 		return
 	}
 	// Getting information about IP
-	ip := helpers.GetIP(r) + "\n"
+	ip := helpers.GetIP(r, l) + "\n"
 
 	// Call the handler to search for a small url,
 	// search for the corresponding long url, update
@@ -188,7 +188,7 @@ func (roa *RouterOpenAPI) GetSmallUrl(w http.ResponseWriter, r *http.Request, u 
 	if err != nil {
 		l.Error("",
 			zap.Error(err))
-		err = ErrorPage(w, "./static/400.tmpl", roa.url)
+		err = ErrorPage(w, "./static/400.tmpl", roa.url, l)
 		if err != nil {
 			l.Error("",
 				zap.Error(err))
@@ -205,7 +205,7 @@ func (roa *RouterOpenAPI) GetSmallUrl(w http.ResponseWriter, r *http.Request, u 
 // PostStat displaying statistics when receiving a request from the admin url
 func (roa *RouterOpenAPI) PostStat(w http.ResponseWriter, r *http.Request) {
 	l := roa.logger
-	l.Debug("Router PostStat")
+	l.Debug("Enter in router func PostStat()")
 	// Read the admin url from the request
 	adminURL := r.FormValue("admin_url")
 	// Form a request with JSON
@@ -218,7 +218,7 @@ func (roa *RouterOpenAPI) PostStat(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		l.Error("",
 			zap.Error(err))
-		pErr := ErrorPage(w, "./static/500.tmpl", roa.url)
+		pErr := ErrorPage(w, "./static/500.tmpl", roa.url, l)
 		if pErr != nil {
 			render.Render(w, r, ErrRender(err))
 		}
@@ -230,7 +230,7 @@ func (roa *RouterOpenAPI) PostStat(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		l.Error("",
 			zap.Error(err))
-		pErr := ErrorPage(w, "./static/400.tmpl", roa.url)
+		pErr := ErrorPage(w, "./static/400.tmpl", roa.url, l)
 		if pErr != nil {
 			render.Render(w, r, ErrInvalidRequest(err))
 		}
@@ -240,7 +240,7 @@ func (roa *RouterOpenAPI) PostStat(w http.ResponseWriter, r *http.Request) {
 	gd.SmallURL = roa.url + gd.SmallURL
 	w.WriteHeader(http.StatusOK)
 	// Call the function to display the result
-	err = ResultPage(w, "./static/statistics.tmpl", gd, roa.url)
+	err = ResultPage(w, "./static/statistics.tmpl", gd, roa.url, l)
 	if err != nil {
 		l.Error("",
 			zap.Error(err))
@@ -252,22 +252,9 @@ func (roa *RouterOpenAPI) PostStat(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-// ErrorPage display the error page
-func ErrorPage(w http.ResponseWriter, page string, url string) error {
-	ts, err := template.ParseFiles(page)
-	if err != nil {
-		return err
-	}
-	err = ts.Execute(w, url)
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
 // ResultPage display result page
-func ResultPage(w http.ResponseWriter, page string, smurl handler.Smurl, url string) error {
-	fmt.Println("enter in ResultPage")
+func ResultPage(w http.ResponseWriter, page string, smurl handler.Smurl, url string, l *zap.Logger) error {
+	l.Debug("Enter in router func ResultPage()")
 	type smurlWithServerUrl struct {
 		SmallURL string
 		LongURL  string
@@ -284,17 +271,32 @@ func ResultPage(w http.ResponseWriter, page string, smurl handler.Smurl, url str
 		Count:    smurl.Count,
 		URL:      url,
 	}
-	fmt.Printf("swsu: %v \n", swsu)
+	l.Debug(fmt.Sprintf("smurlWithServerUrl: %v \n", swsu))
 
 	ts, err := template.ParseFiles(page)
 	if err != nil {
 		return err
 	}
-	fmt.Println("parse template sucess")
+	l.Debug("Parse template success")
 	err = ts.Execute(w, swsu)
 	if err != nil {
 		return err
 	}
-	fmt.Println("execute template sucess")
+	l.Debug("Execute template success")
+	return nil
+}
+
+// ErrorPage display the error page
+func ErrorPage(w http.ResponseWriter, page string, url string, l *zap.Logger) error {
+	l.Debug("Enter in router func ErrorPage")
+	ts, err := template.ParseFiles(page)
+	if err != nil {
+		return err
+	}
+	err = ts.Execute(w, url)
+	if err != nil {
+		return err
+	}
+	l.Debug("ErrorPage template execute success")
 	return nil
 }

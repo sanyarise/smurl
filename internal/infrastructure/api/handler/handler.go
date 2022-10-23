@@ -15,14 +15,6 @@ type Handlers struct {
 	logger *zap.Logger
 }
 
-func NewHandlers(sm *smurlrepo.SmurlStorage, l *zap.Logger) *Handlers {
-	h := &Handlers{
-		repo:   sm,
-		logger: l,
-	}
-	return h
-}
-
 type Smurl struct {
 	SmallURL string `json:"small_url,omitempty"`
 	LongURL  string `json:"long_url,omitempty"`
@@ -31,23 +23,32 @@ type Smurl struct {
 	Count    string `json:"count,omitempty"`
 }
 
+func NewHandlers(sm *smurlrepo.SmurlStorage, l *zap.Logger) *Handlers {
+	l.Debug("Enter in handlers func NewHandlers()")
+	handlers := &Handlers{
+		repo:   sm,
+		logger: l,
+	}
+	return handlers
+}
+
 // Endpoint handler for creating a minified url
 func (h *Handlers) CreateSmurlHandle(ctx context.Context, hss Smurl) (Smurl, error) {
 	l := h.logger
-	l.Debug("Handlers create smurl handle")
+	l.Debug("Enter in handlers func CreateSmurlHandle()")
 	ses := smurlentity.Smurl{LongURL: hss.LongURL}
 
 	// Calling a method from a layer with interfaces
-	nses, err := h.repo.CreateURL(ctx, ses)
+	newSmurl, err := h.repo.CreateURL(ctx, ses)
 	if err != nil {
 		l.Error("",
 			zap.Error(err))
 		return Smurl{}, fmt.Errorf("error when creating: %w", err)
 	}
 	return Smurl{
-		LongURL:  nses.LongURL,
-		SmallURL: nses.SmallURL,
-		AdminURL: nses.AdminURL,
+		LongURL:  newSmurl.LongURL,
+		SmallURL: newSmurl.SmallURL,
+		AdminURL: newSmurl.AdminURL,
 	}, nil
 }
 
@@ -55,7 +56,7 @@ func (h *Handlers) CreateSmurlHandle(ctx context.Context, hss Smurl) (Smurl, err
 // statistics and redirects to the found long address
 func (h *Handlers) RedirectHandle(ctx context.Context, smallURL string, ip string) (Smurl, error) {
 	l := h.logger
-	l.Debug("Handlers redirect handle")
+	l.Debug("Enter in handlers func RedirectHandle()")
 
 	es := smurlentity.Smurl{
 		SmallURL: smallURL,
@@ -78,7 +79,7 @@ func (h *Handlers) RedirectHandle(ctx context.Context, smallURL string, ip strin
 // transitions on a reduced url
 func (h *Handlers) GetStatHandle(ctx context.Context, sm Smurl) (Smurl, error) {
 	l := h.logger
-	l.Debug("Handlers get stat handle")
+	l.Debug("Enter in handlers func GetStatHandle()")
 	es := smurlentity.Smurl{
 		AdminURL: sm.AdminURL,
 	}

@@ -16,6 +16,7 @@ type Server struct {
 }
 
 func NewServer(addr string, h http.Handler, l *zap.Logger, rto int, wto int, rhto int) *Server {
+	l.Debug("Enter in server func NewServer()")
 	s := &Server{}
 
 	s.srv = http.Server{
@@ -29,11 +30,13 @@ func NewServer(addr string, h http.Handler, l *zap.Logger, rto int, wto int, rht
 }
 
 func (s *Server) Stop() {
+	s.logger.Debug("Enter in server func Stop()")
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 	s.srv.Shutdown(ctx)
 	cancel()
 }
 
 func (s *Server) Start(smr *smurlrepo.SmurlStorage) {
+	s.logger.Debug("Enter in server func Start()")
 	go s.srv.ListenAndServe()
 }

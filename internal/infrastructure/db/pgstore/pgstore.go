@@ -32,7 +32,7 @@ type SmurlStore struct {
 }
 
 func NewSmurlStore(dsn string, l *zap.Logger) (*SmurlStore, error) {
-	l.Debug("Pgstore NewSmurlStore")
+	l.Debug("Enter in pgstore func NewSmurlStore()")
 	db, err := sql.Open("pgx", dsn)
 	if err != nil {
 		l.Error("error on sql open",
@@ -68,15 +68,17 @@ func NewSmurlStore(dsn string, l *zap.Logger) (*SmurlStore, error) {
 	}
 	return su, nil
 }
-func (su *SmurlStore) Close() {
-	su.logger.Debug("DB close")
-	su.db.Close()
+
+func (ss *SmurlStore) Close() {
+	l := ss.logger
+	l.Debug("Enter in pgstore func Close()")
+	ss.db.Close()
 }
 
 // CreateURL saving long url, short url and admin url to database
 func (ss *SmurlStore) CreateURL(ctx context.Context, ses smurlentity.Smurl) (*smurlentity.Smurl, error) {
 	l := ss.logger
-	l.Debug("Pgstore CreateURL")
+	l.Debug("Enter in pgstore func CreateURL()")
 	// Create a short and admin url
 	smallURL := helpers.RandString(l)
 	adminURL := helpers.RandString(l)
@@ -126,7 +128,7 @@ func (ss *SmurlStore) CreateURL(ctx context.Context, ses smurlentity.Smurl) (*sm
 // UpdateStat updating statistics data when clicking on a reduced url
 func (ss *SmurlStore) UpdateStat(ctx context.Context, ses smurlentity.Smurl) (*smurlentity.Smurl, error) {
 	l := ss.logger
-	l.Debug("Pgstore UpdateStat")
+	l.Debug("Enter in pgstore func UpdateStat()")
 	pgs := &PgSmurl{
 		LongURL:  ses.LongURL,
 		Count:    ses.Count,
@@ -164,7 +166,7 @@ func (ss *SmurlStore) UpdateStat(ctx context.Context, ses smurlentity.Smurl) (*s
 // ReadStat reads statistics data
 func (ss *SmurlStore) ReadStat(ctx context.Context, ses smurlentity.Smurl) (*smurlentity.Smurl, error) {
 	l := ss.logger
-	l.Debug("Pgstore ReadStat")
+	l.Debug("Enter in pgstore func ReadStat()")
 	pgs := &PgSmurl{}
 	// Performing a database search
 	rows, err := ss.db.QueryContext(ctx,
@@ -210,7 +212,7 @@ func (ss *SmurlStore) ReadStat(ctx context.Context, ses smurlentity.Smurl) (*smu
 // FindURL search small url in database
 func (ss *SmurlStore) FindURL(ctx context.Context, ses smurlentity.Smurl) (*smurlentity.Smurl, error) {
 	l := ss.logger
-	l.Debug("Pgstore FindUrl")
+	l.Debug("Enter in pgstore func FindUrl()")
 
 	pgs := &PgSmurl{}
 	rows, err := ss.db.QueryContext(ctx,

@@ -25,6 +25,7 @@ type SmurlStorage struct {
 }
 
 func NewSmurlStorage(smurlStore SmurlStore, l *zap.Logger) *SmurlStorage {
+	l.Debug("Enter in func smurlrepo NewSmurlStorage()")
 	return &SmurlStorage{
 		smurlStore: smurlStore,
 		logger:     l,
@@ -33,7 +34,7 @@ func NewSmurlStorage(smurlStore SmurlStore, l *zap.Logger) *SmurlStorage {
 
 func (ss *SmurlStorage) CreateURL(ctx context.Context, ses smurlentity.Smurl) (*smurlentity.Smurl, error) {
 	l := ss.logger
-	l.Debug("Smurlrepo CreateURL")
+	l.Debug("Enter in smurlrepo func CreateURL()")
 
 	newSmurl, err := ss.smurlStore.CreateURL(ctx, ses)
 	if err != nil {
@@ -46,7 +47,7 @@ func (ss *SmurlStorage) CreateURL(ctx context.Context, ses smurlentity.Smurl) (*
 
 func (ss *SmurlStorage) CreateStat(ctx context.Context, ses smurlentity.Smurl) (*smurlentity.Smurl, error) {
 	l := ss.logger
-	l.Debug("Smurlrepo CreateStat")
+	l.Debug("Enter in smurlrepo func CreateStat()")
 	// Search for a small url in the database
 	ru, err := ss.smurlStore.FindURL(ctx, ses)
 	if err != nil {
@@ -78,7 +79,7 @@ func (ss *SmurlStorage) CreateStat(ctx context.Context, ses smurlentity.Smurl) (
 
 func (ss *SmurlStorage) FindURL(ctx context.Context, url smurlentity.Smurl) (*smurlentity.Smurl, error) {
 	l := ss.logger
-	l.Debug("Smurlrepo FindURL")
+	l.Debug("Enter in smurlrepo func FindURL()")
 	ru, err := ss.smurlStore.FindURL(ctx, url)
 	if err != nil {
 		l.Error("",
@@ -90,7 +91,7 @@ func (ss *SmurlStorage) FindURL(ctx context.Context, url smurlentity.Smurl) (*sm
 
 func (ss *SmurlStorage) ReadStat(ctx context.Context, ses smurlentity.Smurl) (*smurlentity.Smurl, error) {
 	l := ss.logger
-	l.Debug("Smurlstorage ReadStat")
+	l.Debug("Enter in smurlrepo func ReadStat()")
 	rss, err := ss.smurlStore.ReadStat(ctx, ses)
 	if err != nil {
 		l.Error("",
