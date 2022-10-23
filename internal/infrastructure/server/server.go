@@ -37,6 +37,5 @@ func (s *Server) Stop() {
 }
 
 func (s *Server) Start(smr *smurlrepo.SmurlStorage) {
-	s.logger.Debug("Enter in server func Start()")
 	go s.srv.ListenAndServe()
 }
