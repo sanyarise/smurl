@@ -21,6 +21,9 @@ h1 {
 h2 {
     text-align: center;
 }
+h3 {
+    text-align: center;
+}
 
 .link {
     color:#fff
@@ -34,7 +37,7 @@ h2 {
 }
 
 .app__url-converter {
-    width: 70%;
+    width: 50%;
     margin: auto;;
     padding: 5%;
 }
@@ -64,14 +67,35 @@ button:hover{
 button:active{
     color: black;
 }
+* {
+	margin: 0;
+	padding: 0;
+}
+html,
+body {
+	height: 100%;
+}
+.wrapper {
+	display: flex;
+	flex-direction: column;
+	min-height: 100%;
+}
+.content {
+	flex: 1 0 auto;
+}
+.footer {
+	flex: 0 0 auto;
+}
     </style>
     <title>Main</title>
 </head>
     <body>
+    <div class="wrapper">
+    <div class="content">
         <div class="app__container">
             <div class="app__heading">
                 <h1>SMURL - service to shortify long urls</h1>
-            </div>
+            </div><br><br><br><br>
             
             <div class="app__url-converter">
                 <form method="POST" action="create">
@@ -85,5 +109,13 @@ button:active{
                 <button id="generate-button" >View Statistics</button>
                 </form>
             </div>
+            </div>
+    </div>
+              <div class="footer">
+          <footer>
+            <h3>(c) sanyarise   <a href="https://github.com/sanyarise"><img src="/static/2.png"></a></h3>
+          </footer>
+          </div>
+          </div>
     </body> 
 </html>

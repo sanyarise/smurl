@@ -11,8 +11,8 @@ import (
 
 type Config struct {
 	DNS                string `toml:"dns" env:"DATABASE_URL" envDefault:"postgres://postgres:1110@localhost/test?sslmode=disable"`
-	Port               string `toml:"port" env:"PORT" envDefault:":8000"`
-	ServerURL          string `toml:"server_url" env:"SERVER_URL" envDefault:"http://localhost/"`
+	Port               string `toml:"port" env:"PORT" envDefault:"1234"`
+	ServerURL          string `toml:"server_url" env:"SERVER_URL" envDefault:"http://localhost:1234/"`
 	ReadTimeout        int    `toml:"read_timeout" env:"READ_TIMEOUT" envDefault:"30"`
 	WriteTimeout       int    `toml:"write_timeout" env:"WRITE_TIMEOUT" envDefault:"30"`
 	WriteHeaderTimeout int    `toml:"write_header_timeout" env:"WRITE_HEADER_TIMEOUT" envDefault:"30"`

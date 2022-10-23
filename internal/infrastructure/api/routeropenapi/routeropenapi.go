@@ -31,6 +31,9 @@ func NewRouterOpenAPI(hs *handler.Handlers, l *zap.Logger, url string) *RouterOp
 		url:    url,
 	}
 
+	fs := http.FileServer(http.Dir("static"))
+	r.Handle("/static/*", http.StripPrefix("/static/", fs))
+
 	r.Mount("/", Handler(ret))
 
 	swg, err := GetSwagger()
@@ -70,7 +73,7 @@ func (roa *RouterOpenAPI) Get(w http.ResponseWriter, r *http.Request) {
 		msg := fmt.Sprintf("error on template parse home page files:%s", err)
 		l.Error(msg)
 		w.WriteHeader(http.StatusInternalServerError)
-		pErr := ErrorPage(w, "./static/500.tmpl")
+		pErr := ErrorPage(w, "./static/500.tmpl", roa.url)
 		if pErr != nil {
 			msg = fmt.Sprintf("error on error page func: %s", err)
 			l.Error(msg)
@@ -85,7 +88,7 @@ func (roa *RouterOpenAPI) Get(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		msg := fmt.Sprintf("error on execute home page files: %s", err)
 		l.Error(msg)
-		pErr := ErrorPage(w, "./static/500.tmpl")
+		pErr := ErrorPage(w, "./static/500.tmpl", roa.url)
 		if pErr != nil {
 			msg = fmt.Sprintf("error on execute home page files: %s", err)
 			l.Error(msg)
@@ -107,7 +110,7 @@ func (roa *RouterOpenAPI) PostCreate(w http.ResponseWriter, r *http.Request) {
 	ok := helpers.CheckURL(longURL)
 	if !ok {
 		l.Error("incorrect long url")
-		pErr := ErrorPage(w, "./static/400.tmpl")
+		pErr := ErrorPage(w, "./static/400.tmpl", roa.url)
 		if pErr != nil {
 			msg := fmt.Sprint(pErr)
 			l.Error(msg)
@@ -115,17 +118,19 @@ func (roa *RouterOpenAPI) PostCreate(w http.ResponseWriter, r *http.Request) {
 		}
 		return
 	}
+	l.Debug("URL check sucess")
 	// Create a request with JSON
 	url := roa.url + "create"
-
+	l.Debug(url)
 	str := fmt.Sprintf(`{"long_url":"%s"}`, longURL)
+	l.Debug(str)
 	jsonStr := []byte(str)
 	r, err := http.NewRequest("POST", url, bytes.NewBuffer(jsonStr))
 	r.Header.Set("Content-Type", "application/json")
 	if err != nil {
 		msg := fmt.Sprintf("error on create new request: %s", err)
 		l.Error(msg)
-		pErr := ErrorPage(w, "./static/500.tmpl")
+		pErr := ErrorPage(w, "./static/500.tmpl", roa.url)
 		if pErr != nil {
 			render.Render(w, r, ErrRender(err))
 		}
@@ -139,7 +144,7 @@ func (roa *RouterOpenAPI) PostCreate(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		msg := fmt.Sprintf("create smurl error %s: ", err)
 		l.Error(msg)
-		pErr := ErrorPage(w, "./static/400.tmpl")
+		pErr := ErrorPage(w, "./static/400.tmpl", roa.url)
 		if pErr != nil {
 			msg := fmt.Sprint(pErr)
 			l.Error(msg)
@@ -152,7 +157,7 @@ func (roa *RouterOpenAPI) PostCreate(w http.ResponseWriter, r *http.Request) {
 	// Write the full address to the resulting structure
 	hss.SmallURL = roa.url + hss.SmallURL
 	// Call the function to render the page with the result
-	err = ResultPage(w, "./static/result.tmpl", hss)
+	err = ResultPage(w, "./static/result.tmpl", hss, roa.url)
 	if err != nil {
 		l.Error("",
 			zap.Error(err))
@@ -167,7 +172,7 @@ func (roa *RouterOpenAPI) GetSmallUrl(w http.ResponseWriter, r *http.Request, u 
 	// Cut off incorrect addresses
 	if len(u) != 8 {
 		l.Debug(fmt.Sprintf("Incorrect small url %s", u))
-		err := ErrorPage(w, "./static/400.tmpl")
+		err := ErrorPage(w, "./static/400.tmpl", roa.url)
 		if err != nil {
 			render.Render(w, r, ErrInvalidRequest(err))
 		}
@@ -183,7 +188,7 @@ func (roa *RouterOpenAPI) GetSmallUrl(w http.ResponseWriter, r *http.Request, u 
 	if err != nil {
 		l.Error("",
 			zap.Error(err))
-		err = ErrorPage(w, "./static/400.tmpl")
+		err = ErrorPage(w, "./static/400.tmpl", roa.url)
 		if err != nil {
 			l.Error("",
 				zap.Error(err))
@@ -213,7 +218,7 @@ func (roa *RouterOpenAPI) PostStat(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		l.Error("",
 			zap.Error(err))
-		pErr := ErrorPage(w, "./static/500.tmpl")
+		pErr := ErrorPage(w, "./static/500.tmpl", roa.url)
 		if pErr != nil {
 			render.Render(w, r, ErrRender(err))
 		}
@@ -225,7 +230,7 @@ func (roa *RouterOpenAPI) PostStat(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		l.Error("",
 			zap.Error(err))
-		pErr := ErrorPage(w, "./static/400.tmpl")
+		pErr := ErrorPage(w, "./static/400.tmpl", roa.url)
 		if pErr != nil {
 			render.Render(w, r, ErrInvalidRequest(err))
 		}
@@ -235,7 +240,7 @@ func (roa *RouterOpenAPI) PostStat(w http.ResponseWriter, r *http.Request) {
 	gd.SmallURL = roa.url + gd.SmallURL
 	w.WriteHeader(http.StatusOK)
 	// Call the function to display the result
-	err = ResultPage(w, "./static/statistics.tmpl", gd)
+	err = ResultPage(w, "./static/statistics.tmpl", gd, roa.url)
 	if err != nil {
 		l.Error("",
 			zap.Error(err))
@@ -248,12 +253,12 @@ func (roa *RouterOpenAPI) PostStat(w http.ResponseWriter, r *http.Request) {
 }
 
 // ErrorPage display the error page
-func ErrorPage(w http.ResponseWriter, page string) error {
+func ErrorPage(w http.ResponseWriter, page string, url string) error {
 	ts, err := template.ParseFiles(page)
 	if err != nil {
 		return err
 	}
-	err = ts.Execute(w, nil)
+	err = ts.Execute(w, url)
 	if err != nil {
 		return err
 	}
@@ -261,14 +266,35 @@ func ErrorPage(w http.ResponseWriter, page string) error {
 }
 
 // ResultPage display result page
-func ResultPage(w http.ResponseWriter, page string, smurl handler.Smurl) error {
+func ResultPage(w http.ResponseWriter, page string, smurl handler.Smurl, url string) error {
+	fmt.Println("enter in ResultPage")
+	type smurlWithServerUrl struct {
+		SmallURL string
+		LongURL  string
+		AdminURL string
+		IPInfo   string
+		Count    string
+		URL      string
+	}
+	swsu := smurlWithServerUrl{
+		SmallURL: smurl.SmallURL,
+		LongURL:  smurl.LongURL,
+		AdminURL: smurl.AdminURL,
+		IPInfo:   smurl.IPInfo,
+		Count:    smurl.Count,
+		URL:      url,
+	}
+	fmt.Printf("swsu: %v \n", swsu)
+
 	ts, err := template.ParseFiles(page)
 	if err != nil {
 		return err
 	}
-	err = ts.Execute(w, smurl)
+	fmt.Println("parse template sucess")
+	err = ts.Execute(w, swsu)
 	if err != nil {
 		return err
 	}
+	fmt.Println("execute template sucess")
 	return nil
 }

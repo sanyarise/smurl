@@ -18,11 +18,13 @@
 h1 {
     text-align: center;
 }
-h2 {
+.req {
     text-align: center;
     color: red;
 }
-
+h3 {
+    text-align: center;
+}
 a {
 color: white;
 }
@@ -63,16 +65,46 @@ button:hover{
 button:active{
     color: black;
 }
+* {
+	margin: 0;
+	padding: 0;
+}
+html,
+body {
+	height: 100%;
+}
+.wrapper {
+	display: flex;
+	flex-direction: column;
+	min-height: 100%;
+}
+.content {
+	flex: 1 0 auto;
+}
+.footer {
+	flex: 0 0 auto;
+}
     </style>
     <title>Result</title>
 </head>
     <body>
+    <div class="wrapper">
+    <div class="content">
         <div class="app__container">
             <div class="app__heading">
-                <h1><a href="https://sanrise-smurl.herokuapp.com">SMURL - service to shortify long urls</a></h1>
-            </div><br><br>
+                <h1><a href="{{ .}}">SMURL - service to shortify long urls</a></h1>
+            </div><br><br><br><br><br><br><br><br><br><br><br><br>
             
     
-          <h2>500 Internal Server Error!</h2>
+          <h1 class="req">500 Internal Server Error</h1>
+          </div>
+    </div>
+          <div class="footer">
+          <footer>
+            <h3>(c) sanyarise   <a href="https://github.com/sanyarise"><img src="/static/2.png"></a></h3>
+          </footer>
+          </div>
+          </div>
+
     </body> 
 </html>

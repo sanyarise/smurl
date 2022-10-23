@@ -16,4 +16,4 @@ linters:
     - govet
     - whitespace
     - bodyclose
-    - gofmt
+  #  - gofmt

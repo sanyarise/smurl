@@ -28,7 +28,7 @@ services:
       - ./config:/app/config
       - ./static:/app/static
     environment:
-      PG_DSN: "postgres://postgres:1110@postgres/test?sslmode=disable"
+      DATABASE_URL: "postgres://postgres:1110@postgres/test?sslmode=disable"
     depends_on:
       - postgres
     networks:

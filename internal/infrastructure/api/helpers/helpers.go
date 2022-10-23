@@ -2,6 +2,8 @@ package helpers
 
 import (
 	"crypto/rand"
+	"fmt"
+	"log"
 	"net"
 	"net/http"
 	"net/url"
@@ -13,6 +15,7 @@ import (
 
 // CheckURL check the validity of a long url
 func CheckURL(longURL string) bool {
+	log.Println("Enter in CheckURL")
 	url, err := url.Parse(longURL)
 	return err == nil && url.Scheme != "" && url.Host != ""
 }
@@ -20,29 +23,14 @@ func CheckURL(longURL string) bool {
 // RandString generate a random string,
 // used for minified and admin url
 func RandString(l *zap.Logger) string {
-	buf := make([]byte, 8)
-	num, err := rand.Read(buf)
+	buf := make([]byte, 4)
+	_, err := rand.Read(buf)
 	if err != nil {
-		l.Error("error on rand.Read(buf)",
+		l.Error("error on rand.read(buf)",
 			zap.Error(err))
 		return ""
 	}
-	res := Base62Encode(uint64(num))
-	return res
-}
-
-func Base62Encode(number uint64) string {
-	const (
-		alphabet = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
-	)
-	length := len(alphabet)
-	var encodedBuilder strings.Builder
-	encodedBuilder.Grow(10)
-	for ; number > 0; number = number / uint64(length) {
-		encodedBuilder.WriteByte(alphabet[(number % uint64(length))])
-	}
-
-	return encodedBuilder.String()
+	return fmt.Sprintf("%x", buf)
 }
 
 // CountUses increment the counter

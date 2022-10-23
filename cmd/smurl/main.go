@@ -28,7 +28,7 @@ func main() {
 	defer l.Logger.Sync()
 	logger := l.Logger
 
-	logger.Info("Configuration file successfully load")
+	logger.Info("Configuration successfully load")
 
 	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt)
 

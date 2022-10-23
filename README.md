@@ -27,7 +27,9 @@ Postgresql database selected as storage
 
 - launch with `make launch`
 
-To start, you need to enter the command: make launch (there will be a check with linters, testing, creating an executable file, starting the service in docker-compose)
+- To start, you need to enter the command: make launch (there will be a check with linters, testing, creating an executable file, starting the service in docker-compose)
+
+- Then open your browser and type http://localhost:1234
 
 Implementation on heroku.com at https://sanrise-smurl.herokuapp.com/
 
