@@ -1,18 +1,17 @@
-.PHONY: lint
-lint:
-	golangci-lint run ./...
-
 .PHONY: test
-test: lint
+test:
 	go test ./...
 
 .PHONY: build
-build: lint test
+build: test
 	go build ./cmd/smurl/main.go
 
 
 
 .PHONY: launch
-launch: lint test build
+launch: test build
 	docker-compose up -d
 	
+.PHONY: run
+run: test build launch
+	rm ./main
