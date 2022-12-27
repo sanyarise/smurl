@@ -10,6 +10,7 @@ require (
 	github.com/getkin/kin-openapi v0.92.0
 	github.com/go-chi/chi/v5 v5.0.7
 	github.com/go-chi/render v1.0.1
+	github.com/google/uuid v1.3.0
 	github.com/jackc/pgx/v4 v4.15.0
 	go.uber.org/zap v1.21.0
 )
