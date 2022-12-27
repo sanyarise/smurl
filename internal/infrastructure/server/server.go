@@ -17,17 +17,17 @@ type Server struct {
 
 func NewServer(addr string, h http.Handler, l *zap.Logger, rto int, wto int, rhto int) *Server {
 	l.Debug("Enter in server func NewServer()")
-	s := &Server{}
+	server := &Server{}
 
-	s.srv = http.Server{
+	server.srv = http.Server{
 		Addr:              addr,
 		Handler:           h,
 		ReadTimeout:       time.Duration(rto) * time.Second,
 		WriteTimeout:      time.Duration(wto) * time.Second,
 		ReadHeaderTimeout: time.Duration(rhto) * time.Second,
 	}
-	s.logger = l
-	return s
+	server.logger = l
+	return server
 }
 
 func (s *Server) Stop() {

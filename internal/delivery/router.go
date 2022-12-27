@@ -1,4 +1,4 @@
-package routeropenapi
+package delivery
 
 import (
 	"bytes"
@@ -6,28 +6,27 @@ import (
 	"fmt"
 	"html/template"
 	"net/http"
+	"smurl/internal/delivery"
 
-	"github.com/sanyarise/smurl/internal/infrastructure/api/handler"
-	"github.com/sanyarise/smurl/internal/infrastructure/api/helpers"
+	"github.com/sanyarise/smurl/internal/delivery"
+	"github.com/sanyarise/smurl/internal/helpers"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/render"
 	"go.uber.org/zap"
 )
 
-type RouterOpenAPI struct {
+type Router struct {
 	*chi.Mux
-	hs     *handler.Handlers
 	logger *zap.Logger
 	url    string
 }
 
-func NewRouterOpenAPI(hs *handler.Handlers, l *zap.Logger, url string) *RouterOpenAPI {
+func NewRouter(logger *zap.Logger, url string) *Router {
 	r := chi.NewRouter()
 
-	ret := &RouterOpenAPI{
-		hs:     hs,
-		logger: l,
+	ret := &Router{
+		logger: logger,
 		url:    url,
 	}
 
@@ -35,19 +34,11 @@ func NewRouterOpenAPI(hs *handler.Handlers, l *zap.Logger, url string) *RouterOp
 	r.Handle("/static/*", http.StripPrefix("/static/", fs))
 
 	r.Mount("/", Handler(ret))
-
-	swg, err := GetSwagger()
-	if err != nil {
-		msg := fmt.Sprintf("error:%s", err)
-		l.Error("swagger fail",
-			zap.String(" ", msg))
-	}
-
-	r.Get("/swagger.json", func(w http.ResponseWriter, r *http.Request) {
-		enc := json.NewEncoder(w)
-		_ = enc.Encode(swg)
+	r.Group(func(router chi.Router){
+		router.Post("/create", Create)
+		router.Get("/{smurl}", Redirect)
+		router.Get("/{adminUrl}", GetStat)
 	})
-
 	ret.Mux = r
 	return ret
 }

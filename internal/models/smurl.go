@@ -1,4 +1,4 @@
-package smurlentity
+package models
 
 // The internal structure of the Smurl object
 type Smurl struct {

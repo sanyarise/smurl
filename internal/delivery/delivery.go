@@ -1,18 +1,18 @@
-package handler
+package delivery
 
 import (
 	"context"
 	"fmt"
 
-	"github.com/sanyarise/smurl/internal/entities/smurlentity"
-	"github.com/sanyarise/smurl/internal/usecases/repos/smurlrepo"
+	"github.com/sanyarise/smurl/internal/models"
+	"github.com/sanyarise/smurl/internal/usecase"
 
 	"go.uber.org/zap"
 )
 
-type Handlers struct {
-	repo   *smurlrepo.SmurlStorage
-	logger *zap.Logger
+type Delivery struct {
+	usecase usecase.Usecase
+	logger  *zap.Logger
 }
 
 type Smurl struct {
@@ -23,8 +23,8 @@ type Smurl struct {
 	Count    string `json:"count,omitempty"`
 }
 
-func NewHandlers(sm *smurlrepo.SmurlStorage, l *zap.Logger) *Handlers {
-	l.Debug("Enter in handlers func NewHandlers()")
+func NewDelivery(usecase usecase.Usecase, logger *zap.Logger) *Delivery{
+	logger.Debug("Enter in delivery NewDelivery()")
 	handlers := &Handlers{
 		repo:   sm,
 		logger: l,
@@ -33,9 +33,8 @@ func NewHandlers(sm *smurlrepo.SmurlStorage, l *zap.Logger) *Handlers {
 }
 
 // Endpoint handler for creating a minified url
-func (h *Handlers) CreateSmurlHandle(ctx context.Context, hss Smurl) (Smurl, error) {
-	l := h.logger
-	l.Debug("Enter in handlers func CreateSmurlHandle()")
+func (delivery *Delivery) Create(ctx context.Context, createdSmurl Smurl) (Smurl, error) {
+	delivery.logger.Debug("Enter in delivery Create()")
 	ses := smurlentity.Smurl{LongURL: hss.LongURL}
 
 	// Calling a method from a layer with interfaces
@@ -54,7 +53,7 @@ func (h *Handlers) CreateSmurlHandle(ctx context.Context, hss Smurl) (Smurl, err
 
 // Endpoint handler for searching the reduced url in the database, updating
 // statistics and redirects to the found long address
-func (h *Handlers) RedirectHandle(ctx context.Context, smallURL string, ip string) (Smurl, error) {
+func (delivery *Delivery) Redirect(ctx context.Context, smallURL string, ip string) (Smurl, error) {
 	l := h.logger
 	l.Debug("Enter in handlers func RedirectHandle()")
 
@@ -77,7 +76,7 @@ func (h *Handlers) RedirectHandle(ctx context.Context, smallURL string, ip strin
 
 // Endpoint handler for searching the admin url in the database and getting statistics
 // transitions on a reduced url
-func (h *Handlers) GetStatHandle(ctx context.Context, sm Smurl) (Smurl, error) {
+func (delivery *Delivery) GetStat(ctx context.Context, sm Smurl) (Smurl, error) {
 	l := h.logger
 	l.Debug("Enter in handlers func GetStatHandle()")
 	es := smurlentity.Smurl{

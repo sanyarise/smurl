@@ -3,8 +3,6 @@ CREATE TABLE IF NOT EXISTS smurls (
 	created_at timestamptz NOT NULL,
 	long_url varchar NOT NULL,
 	admin_url varchar NOT NULL,
-	count varchar,
-	ip_info varchar,
-
-	CONSTRAINT smurls_pk PRIMARY KEY (small_url)
+	count integer,
+	ip_info text[]
 	);
