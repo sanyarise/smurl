@@ -26,6 +26,7 @@ func NewServer(addr string, h http.Handler, l *zap.Logger, rto int, wto int, rht
 		WriteTimeout:      time.Duration(wto) * time.Second,
 		ReadHeaderTimeout: time.Duration(rhto) * time.Second,
 	}
+	s.logger = l
 	return s
 }
 
