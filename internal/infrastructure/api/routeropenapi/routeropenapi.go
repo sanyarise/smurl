@@ -169,15 +169,6 @@ func (roa *RouterOpenAPI) PostCreate(w http.ResponseWriter, r *http.Request) {
 func (roa *RouterOpenAPI) GetSmallUrl(w http.ResponseWriter, r *http.Request, u string) {
 	l := roa.logger
 	l.Debug("Enter in router func GetSmallUrl()")
-	// Cut off incorrect addresses
-	if len(u) != 8 {
-		l.Debug(fmt.Sprintf("Incorrect small url %s", u))
-		err := ErrorPage(w, "./static/400.tmpl", roa.url, l)
-		if err != nil {
-			render.Render(w, r, ErrInvalidRequest(err))
-		}
-		return
-	}
 	// Getting information about IP
 	ip := helpers.GetIP(r, l) + "\n"
 
