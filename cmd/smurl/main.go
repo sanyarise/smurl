@@ -5,14 +5,13 @@ import (
 	"log"
 	"os"
 	"os/signal"
-
-	"github.com/sanyarise/smurl/config"
-	"github.com/sanyarise/smurl/internal/infrastructure/api/handler"
-	"github.com/sanyarise/smurl/internal/infrastructure/api/logger"
-	"github.com/sanyarise/smurl/internal/infrastructure/api/routeropenapi"
-	"github.com/sanyarise/smurl/internal/infrastructure/db/pgstore"
-	"github.com/sanyarise/smurl/internal/infrastructure/server"
-	"github.com/sanyarise/smurl/internal/usecases/repos/smurlrepo"
+	"smurl/config"
+	"smurl/internal/delivery"
+	"smurl/internal/infrastructure/logger"
+	"smurl/internal/infrastructure/server"
+	"smurl/internal/repository"
+	"smurl/internal/usecase"
+	"syscall"
 
 	"go.uber.org/zap"
 )
@@ -25,26 +24,25 @@ func main() {
 
 	// Logger init
 	l := logger.NewLogger(cfg.LogLevel)
-	defer l.Logger.Sync()
 	logger := l.Logger
 
 	logger.Info("Configuration successfully load")
 
-	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt)
+	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM, syscall.SIGINT)
 
 	// Database init
-	smst, err := pgstore.NewSmurlStore(cfg.DNS, logger)
+	repository, err := repository.NewSmurlRepository(cfg.DNS, logger)
 	if err != nil {
 		log.Fatal(err)
 	}
 	// Interface layer init
-	smr := smurlrepo.NewSmurlStorage(smst, logger)
+	usecase := usecase.NewSmurlUsecase(repository, logger)
 
 	// Handlers init
-	hs := handler.NewHandlers(smr, logger)
+	handlers := delivery.NewDelivery(usecase, logger)
 
 	// Router init
-	router := routeropenapi.NewRouterOpenAPI(hs, logger, cfg.ServerURL)
+	router := delivery.NewRouter(handlers, logger, cfg.ServerURL)
 
 	// Server init
 	server := server.NewServer(":"+cfg.Port, router, logger, cfg.ReadTimeout, cfg.WriteTimeout, cfg.WriteHeaderTimeout)

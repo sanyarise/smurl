@@ -2,14 +2,8 @@
 test:
 	go test ./...
 
-.PHONY: build
-build: test
-	go build ./cmd/smurl/main.go
-
-
-
 .PHONY: launch
-launch: test build
+launch: test
 	docker-compose up -d
 	
 .PHONY: run

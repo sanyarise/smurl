@@ -1,16 +1,19 @@
 package helpers
 
 import (
-	"crypto/rand"
-	"fmt"
 	"net"
 	"net/http"
 	"net/url"
 	"strconv"
 	"strings"
 
+	"github.com/google/uuid"
 	"go.uber.org/zap"
 )
+
+const alphabet = "ynAJfoSgdXHB5VasEMtcbPCr1uNZ4LG723ehWkvwYR6KpxjTm8iQUFqz9D"
+
+var alphabetLen = uint32(len(alphabet))
 
 // CheckURL check the validity of a long url
 func CheckURL(longURL string, l *zap.Logger) bool {
@@ -23,15 +26,21 @@ func CheckURL(longURL string, l *zap.Logger) bool {
 // used for minified and admin url
 func RandString(l *zap.Logger) string {
 	l.Debug("Enter in func RandString()")
-	buf := make([]byte, 4)
-	_, err := rand.Read(buf)
-	if err != nil {
-		l.Error("error on rand.read(buf)",
-			zap.Error(err))
-		return ""
+	var (
+		digits  []uint32
+		num     = uuid.New().ID()
+		builder strings.Builder
+	)
+	for num > 0 {
+		digits = append(digits, num%alphabetLen)
+		num /= alphabetLen
 	}
-	l.Debug("Random String generate success")
-	return fmt.Sprintf("%x", buf)
+	digits = Reverse(digits)
+
+	for _, digit := range digits {
+		builder.WriteString(string(alphabet[digit]))
+	}
+	return builder.String()
 }
 
 // CountUses increment the counter
@@ -79,4 +88,15 @@ func GetIP(r *http.Request, l *zap.Logger) string {
 		return ip
 	}
 	return "unknown ip"
+}
+
+// Revers reverse slice of uint32
+func Reverse(param []uint32) []uint32 {
+	result := make([]uint32, len(param))
+	counter := 0
+	for i := len(param) - 1; i >= 0; i-- {
+		result[counter] = param[i]
+		counter++
+	}
+	return result
 }

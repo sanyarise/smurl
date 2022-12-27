@@ -30,8 +30,6 @@ Postgresql database selected as storage
 
 - Then open your browser and type http://localhost:1234
 
-Implementation on heroku.com at https://sanrise-smurl.herokuapp.com/
-
 ## Screenshot
 
 <img src="./static/images/smurl.jpg">
