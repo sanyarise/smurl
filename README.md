@@ -1,4 +1,4 @@
-![GitHub Workflow Status](https://img.shields.io/github/workflow/status/sanyarise/smurl/golangci-lint)
+
 ![GitHub language count](https://img.shields.io/github/languages/count/sanyarise/smurl)
 ![GitHub code size in bytes](https://img.shields.io/github/languages/code-size/sanyarise/smurl)
 ![GitHub repo file count](https://img.shields.io/github/directory-file-count/sanyarise/smurl)
@@ -30,8 +30,8 @@ Postgresql database selected as storage
 
 - Then open your browser and type http://localhost:1234
 
-## Screenshot
+## Video
 
-<img src="./static/images/smurl.jpg">
+<img src="./static/images/video.gif">
 
  
