@@ -3,7 +3,7 @@ test:
 	go test ./...
 
 .PHONY: run
-launch: test
+run: test
 	docker-compose up -d
 	
 mock_repo:
