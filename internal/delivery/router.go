@@ -4,6 +4,7 @@ import (
 	"net/http"
 
 	"github.com/go-chi/chi/v5"
+	"github.com/sanyarise/smurl/internal/helpers"
 	"github.com/sanyarise/smurl/internal/usecase"
 	"go.uber.org/zap"
 )
@@ -11,15 +12,17 @@ import (
 type Router struct {
 	*chi.Mux
 	usecase usecase.Usecase
+	helpers helpers.Helper
 	logger  *zap.Logger
 	url     string
 }
 
-func NewRouter(usecase usecase.Usecase, logger *zap.Logger, url string) *Router {
+func NewRouter(usecase usecase.Usecase, helpers helpers.Helper, logger *zap.Logger, url string) *Router {
 	r := chi.NewRouter()
 
 	router := &Router{
 		usecase: usecase,
+		helpers: helpers,
 		logger:  logger,
 		url:     url,
 	}

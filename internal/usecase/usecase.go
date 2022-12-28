@@ -21,13 +21,15 @@ var _ Usecase = SmurlUsecase{}
 
 type SmurlUsecase struct {
 	repository SmurlStore
+	helpers    helpers.Helper
 	logger     *zap.Logger
 }
 
-func NewSmurlUsecase(smurlStore SmurlStore, logger *zap.Logger) *SmurlUsecase {
+func NewSmurlUsecase(smurlStore SmurlStore, helpers helpers.Helper, logger *zap.Logger) *SmurlUsecase {
 	logger.Debug("Enter in usecase NewSmurlUsecase()")
 	return &SmurlUsecase{
 		repository: smurlStore,
+		helpers:    helpers,
 		logger:     logger,
 	}
 }
@@ -37,8 +39,8 @@ func (usecase SmurlUsecase) Create(ctx context.Context, longUrl string) (*models
 	createdSmurl := models.Smurl{
 		LongURL: longUrl,
 	}
-	createdSmurl.SmallURL = helpers.RandString(usecase.logger)
-	createdSmurl.AdminURL = helpers.RandString(usecase.logger)
+	createdSmurl.SmallURL = usecase.helpers.RandString()
+	createdSmurl.AdminURL = usecase.helpers.RandString()
 
 	smurl, err := usecase.repository.Create(ctx, createdSmurl)
 	if err != nil {

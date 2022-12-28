@@ -8,7 +8,6 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/render"
-	"github.com/sanyarise/smurl/internal/helpers"
 	"github.com/sanyarise/smurl/internal/models"
 	"go.uber.org/zap"
 )
@@ -71,7 +70,7 @@ func (router *Router) Create(w http.ResponseWriter, r *http.Request) {
 	longURL := r.FormValue("long_url")
 	router.logger.Debug(fmt.Sprintf("LongURL: %s", longURL))
 	// Checking the validity of a long address
-	ok := helpers.CheckURL(longURL, router.logger)
+	ok := router.helpers.CheckURL(longURL)
 	if !ok {
 		router.logger.Error("incorrect long url")
 		err := router.ErrorPage(w, page400, status400)
@@ -132,7 +131,7 @@ func (router *Router) Redirect(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	// Getting information about IP
-	ip := helpers.GetIP(r, router.logger)
+	ip := router.helpers.GetIP(r)
 	// Call the handler to search for a small url,
 	// search for the corresponding long url, update
 	// statistics
