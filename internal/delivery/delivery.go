@@ -1,94 +1,259 @@
 package delivery
 
 import (
-	"context"
+	"errors"
 	"fmt"
+	"html/template"
+	"net/http"
 
+	"github.com/go-chi/chi/v5"
+	"github.com/go-chi/render"
+	"github.com/sanyarise/smurl/internal/helpers"
 	"github.com/sanyarise/smurl/internal/models"
-	"github.com/sanyarise/smurl/internal/usecase"
-
 	"go.uber.org/zap"
 )
 
-type Delivery struct {
-	usecase usecase.Usecase
-	logger  *zap.Logger
-}
+const (
+	status200 = http.StatusOK
+	status201 = http.StatusCreated
+	status400 = http.StatusBadRequest
+	status500 = http.StatusInternalServerError
+	page200   = "./static/result.tmpl"
+	pageStat  = "./static/statistics.tmpl"
+	page400   = "./static/400.tmpl"
+	page500   = "./static/500.tmpl"
+)
 
 type Smurl struct {
-	SmallURL string `json:"small_url,omitempty"`
-	LongURL  string `json:"long_url,omitempty"`
-	AdminURL string `json:"admin_url,omitempty"`
-	IPInfo   string `json:"ip_info,omitempty"`
-	Count    string `json:"count,omitempty"`
+	SmallURL string
+	LongURL  string
+	AdminURL string
+	IPInfo   []string
+	Count    string
+	URL      string
 }
 
-func NewDelivery(usecase usecase.Usecase, logger *zap.Logger) *Delivery{
-	logger.Debug("Enter in delivery NewDelivery()")
-	handlers := &Handlers{
-		repo:   sm,
-		logger: l,
-	}
-	return handlers
-}
+// Get method displaying the start page
+func (router *Router) HomePage(w http.ResponseWriter, r *http.Request) {
+	router.logger.Debug("Enter in delivery HomePage()")
+	w.WriteHeader(http.StatusOK)
 
-// Endpoint handler for creating a minified url
-func (delivery *Delivery) Create(ctx context.Context, createdSmurl Smurl) (Smurl, error) {
-	delivery.logger.Debug("Enter in delivery Create()")
-	ses := smurlentity.Smurl{LongURL: hss.LongURL}
-
-	// Calling a method from a layer with interfaces
-	newSmurl, err := h.repo.CreateURL(ctx, ses)
+	tmpl, err := template.ParseFiles("./static/home.tmpl")
 	if err != nil {
-		l.Error("",
-			zap.Error(err))
-		return Smurl{}, fmt.Errorf("error when creating: %w", err)
+		router.logger.Error(fmt.Sprintf("error on template parse home page files:%s", err))
+		w.WriteHeader(http.StatusInternalServerError)
+		err = router.ErrorPage(w, page500, status500)
+		if err != nil {
+			router.logger.Error(fmt.Sprintf("error on error page func: %s", err))
+
+			render.Render(w, r, ErrRender(err))
+		}
+		return
 	}
-	return Smurl{
-		LongURL:  newSmurl.LongURL,
-		SmallURL: newSmurl.SmallURL,
-		AdminURL: newSmurl.AdminURL,
-	}, nil
+
+	err = tmpl.Execute(w, nil)
+
+	if err != nil {
+		router.logger.Error(fmt.Sprintf("error on execute home page files: %s", err))
+		err = router.ErrorPage(w, page500, status500)
+		if err != nil {
+			router.logger.Error(fmt.Sprintf("error on execute home page files: %s", err))
+			render.Render(w, r, ErrRender(err))
+		}
+		return
+	}
 }
 
-// Endpoint handler for searching the reduced url in the database, updating
-// statistics and redirects to the found long address
-func (delivery *Delivery) Redirect(ctx context.Context, smallURL string, ip string) (Smurl, error) {
-	l := h.logger
-	l.Debug("Enter in handlers func RedirectHandle()")
-
-	es := smurlentity.Smurl{
-		SmallURL: smallURL,
-		IPInfo:   ip,
+// PostCreate creating a minified url
+func (router *Router) Create(w http.ResponseWriter, r *http.Request) {
+	router.logger.Debug("Enter in delivery Create()")
+	// Reading the long address from the request body
+	longURL := r.FormValue("long_url")
+	router.logger.Debug(fmt.Sprintf("LongURL: %s", longURL))
+	// Checking the validity of a long address
+	ok := helpers.CheckURL(longURL, router.logger)
+	if !ok {
+		router.logger.Error("incorrect long url")
+		err := router.ErrorPage(w, page400, status400)
+		if err != nil {
+			router.logger.Error(err.Error())
+			render.Render(w, r, ErrInvalidRequest(fmt.Errorf("incorrect long url")))
+		}
+		return
 	}
-	// Calling a method from the interface layer to generate statistics before following a long link
-	hs, err := h.repo.CreateStat(ctx, es)
+	router.logger.Debug("URL check sucess")
+
+	// Calling usecase method to create a reduced url
+	newSmurl, err := router.usecase.Create(r.Context(), longURL)
 	if err != nil {
-		l.Error("",
-			zap.Error(err))
-		return Smurl{}, fmt.Errorf("redirect error: %w", err)
+		router.logger.Error(fmt.Sprintf("create smurl error %s: ", err))
+		err := router.ErrorPage(w, page500, status500)
+		if err != nil {
+			router.logger.Error(err.Error())
+			render.Render(w, r, ErrRender(err))
+		}
+		return
 	}
+	router.logger.Debug("Create smurl success")
 
-	return Smurl{
-		LongURL: hs.LongURL,
-	}, nil
+	// Call the function to render the page with the result
+	err = router.ResultPage(w, page200, newSmurl, status201)
+	if err != nil {
+		router.logger.Error("",
+			zap.Error(err))
+	}
 }
 
-// Endpoint handler for searching the admin url in the database and getting statistics
-// transitions on a reduced url
-func (delivery *Delivery) GetStat(ctx context.Context, sm Smurl) (Smurl, error) {
-	l := h.logger
-	l.Debug("Enter in handlers func GetStatHandle()")
-	es := smurlentity.Smurl{
-		AdminURL: sm.AdminURL,
-	}
-	// Calling the method for reading statistics from the interface layer
-	cu, err := h.repo.ReadStat(ctx, es)
+// GetSmallUrl following the reduced url received from the query string
+func (router *Router) Redirect(w http.ResponseWriter, r *http.Request) {
+	router.logger.Debug("Enter in delivery Redirect()")
+	smallUrl := chi.URLParam(r, "smallUrl")
+	ctx := r.Context()
+
+	// Search for a small url in the database
+	smurl, err := router.usecase.FindURL(ctx, smallUrl)
 	if err != nil {
-		l.Error("",
-			zap.Error(err))
-		return Smurl{}, fmt.Errorf("creating stat error:%w", err)
+		if errors.Is(err, models.ErrNotFound) {
+			router.logger.Debug(fmt.Sprintf("smallUrl %s is not exist", smallUrl))
+			err := router.ErrorPage(w, page400, status400)
+			if err != nil {
+				router.logger.Error(err.Error())
+				render.Render(w, r, ErrInvalidRequest(fmt.Errorf("incorrect small url")))
+				return
+			}
+		} else {
+			err := router.ErrorPage(w, page500, status500)
+			if err != nil {
+				router.logger.Error(err.Error())
+				render.Render(w, r, ErrRender(err))
+				return
+			}
+		}
+		return
 	}
-	scu := Smurl(*cu)
-	return scu, nil
+	// Getting information about IP
+	ip := helpers.GetIP(r, router.logger)
+	// Call the handler to search for a small url,
+	// search for the corresponding long url, update
+	// statistics
+	smurl.IPInfo = append(smurl.IPInfo, ip)
+	err = router.usecase.UpdateStat(ctx, *smurl)
+	if err != nil {
+		router.logger.Error(err.Error())
+		err = router.ErrorPage(w, page500, status500)
+		if err != nil {
+			router.logger.Error(err.Error())
+			render.Render(w, r, ErrRender(err))
+			return
+		}
+	}
+	// Redirect to the found long address
+	http.Redirect(w, r, smurl.LongURL, http.StatusTemporaryRedirect)
+	router.logger.Info("Redirect on long url success")
+}
+
+// PostStat displaying statistics when receiving a request from the admin url
+func (router *Router) GetStat(w http.ResponseWriter, r *http.Request) {
+	router.logger.Debug("Enter in delivery GetStat()")
+
+	// Read the admin url from the request
+	adminURL := chi.URLParam(r, "adminUrl")
+
+	// Сall the handler to get statistics
+	smurl, err := router.usecase.ReadStat(r.Context(), adminURL)
+	if err != nil {
+		if errors.Is(err, models.ErrNotFound) {
+			router.logger.Debug(fmt.Sprintf("adminUrl %s is not exist", adminURL))
+			err := router.ErrorPage(w, page400, status400)
+			if err != nil {
+				router.logger.Error(err.Error())
+				render.Render(w, r, ErrInvalidRequest(fmt.Errorf("incorrect small url")))
+				return
+			}
+		} else {
+			err := router.ErrorPage(w, page500, status500)
+			if err != nil {
+				router.logger.Error(err.Error())
+				render.Render(w, r, ErrRender(err))
+				return
+			}
+		}
+		return
+	}
+	// Call the function to display the result
+	err = router.ResultPage(w, pageStat, smurl, status200)
+	if err != nil {
+		router.logger.Error(fmt.Sprintf("create smurl error %s: ", err))
+		err := router.ErrorPage(w, page500, status500)
+		if err != nil {
+			router.logger.Error(err.Error())
+			render.Render(w, r, ErrRender(err))
+		}
+		return
+	}
+}
+
+// ResultPage display result page
+func (router *Router) ResultPage(w http.ResponseWriter, page string, smurl *models.Smurl, status int) error {
+	router.logger.Debug("Enter in delivery ResultPage()")
+	// Write the full address to the resulting structure
+	smurl.SmallURL = router.url + "r/" + smurl.SmallURL
+	smurl.AdminURL = router.url + "s/" + smurl.AdminURL
+	var outSmurl Smurl
+	if status == status201 {
+		outSmurl.AdminURL = smurl.AdminURL
+		outSmurl.SmallURL = smurl.SmallURL
+		outSmurl.URL = router.url
+	} else if status == status200 {
+		outSmurl.AdminURL = smurl.AdminURL
+		outSmurl.SmallURL = smurl.SmallURL
+		outSmurl.LongURL = smurl.LongURL
+		outSmurl.Count = fmt.Sprint(smurl.Count)
+		outSmurl.IPInfo = smurl.IPInfo
+		outSmurl.URL = router.url
+	}
+	router.logger.Debug(fmt.Sprintf("smurlWithServerUrl: %v \n", outSmurl))
+
+	ts, err := template.ParseFiles(page)
+	if err != nil {
+		router.logger.Error(err.Error())
+		err = router.ErrorPage(w, page500, status500)
+		if err != nil {
+			router.logger.Error(err.Error())
+			return err
+		}
+		return nil
+	}
+	router.logger.Debug("Parse template success")
+	w.WriteHeader(status)
+	err = ts.Execute(w, outSmurl)
+	if err != nil {
+		router.logger.Error(err.Error())
+		err = router.ErrorPage(w, page500, status500)
+		if err != nil {
+			router.logger.Error(err.Error())
+			return err
+		}
+		return nil
+	}
+	router.logger.Debug("Execute template success")
+	return nil
+}
+
+// ErrorPage display the error page
+func (router *Router) ErrorPage(w http.ResponseWriter, page string, status int) error {
+	router.logger.Debug("Enter in delivery ErrorPage()")
+	ts, err := template.ParseFiles(page)
+	if err != nil {
+		router.logger.Error(fmt.Sprintf("error on parse template file: %v", err))
+		return err
+	}
+	w.WriteHeader(status)
+	err = ts.Execute(w, router.url)
+	if err != nil {
+		router.logger.Error(fmt.Sprintf("error on execute template file: %v", err))
+		return err
+	}
+	router.logger.Debug("ErrorPage template execute success")
+	return nil
 }

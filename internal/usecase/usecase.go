@@ -3,11 +3,9 @@ package usecase
 import (
 	"context"
 	"fmt"
-	"log"
 
 	"github.com/sanyarise/smurl/internal/helpers"
 	"github.com/sanyarise/smurl/internal/models"
-
 	"go.uber.org/zap"
 )
 
@@ -34,8 +32,11 @@ func NewSmurlUsecase(smurlStore SmurlStore, logger *zap.Logger) *SmurlUsecase {
 	}
 }
 
-func (usecase *SmurlUsecase) Create(ctx context.Context, longUrl string) (*models.Smurl, error) {
-	usecase.logger.Debug("Enter in smurlrepo func CreateURL()")
+func (usecase SmurlUsecase) Create(ctx context.Context, longUrl string) (*models.Smurl, error) {
+	usecase.logger.Debug("Enter in usecase Create()")
+	createdSmurl := models.Smurl{
+		LongURL: longUrl,
+	}
 	createdSmurl.SmallURL = helpers.RandString(usecase.logger)
 	createdSmurl.AdminURL = helpers.RandString(usecase.logger)
 
@@ -48,29 +49,12 @@ func (usecase *SmurlUsecase) Create(ctx context.Context, longUrl string) (*model
 	return smurl, nil
 }
 
-func (usecase *SmurlUsecase) UpdateStat(ctx context.Context, updatedSmurl models.Smurl) error {
-	usecase.logger.Debug("Enter in smurlrepo func CreateStat()")
-	// Search for a small url in the database
-	smurl, err := usecase.repository.FindURL(ctx, updatedSmurl.smallURL)
-	if err != nil {
-		usecase.logger.Error("",
-			zap.Error(err))
-		return fmt.Errorf("error find small url: %s", err)
-	}
+func (usecase SmurlUsecase) UpdateStat(ctx context.Context, updatedSmurl models.Smurl) error {
+	usecase.logger.Debug("Enter in usecase UpdateStat()")
 	// Update the hit counter field
-	smurl.Count, err = helpers.CountUses(smurl.Count, usecase.logger)
-	if err != nil {
-		usecase.logger.Error("",
-			zap.Error(err))
-	}
-	usecase.logger.Debug("Smurlrepo after find and count ++",
-		zap.Any(":", smurl))
-	// Update the field with IP information
-	smurl.IPInfo = append(smurl.IPInfo, updatedSmurl.IPInfo)
-	usecase.logger.Debug("IP info",
-		zap.Any(":", smurl.IPInfo))
+	updatedSmurl.Count++
 	// Call the database method to update statistics
-	err = usecase.repository.UpdateStat(ctx, smurl)
+	err := usecase.repository.UpdateStat(ctx, updatedSmurl)
 	if err != nil {
 		usecase.logger.Error("",
 			zap.Error(err))
@@ -79,24 +63,20 @@ func (usecase *SmurlUsecase) UpdateStat(ctx context.Context, updatedSmurl models
 	return nil
 }
 
-func (usecase *SmurlUsecase) FindURL(ctx context.Context, smallUrl string) (*models.Smurl, error) {
-	usecase.logger.Debug("Enter in smurlrepo func FindURL()")
+func (usecase SmurlUsecase) FindURL(ctx context.Context, smallUrl string) (*models.Smurl, error) {
+	usecase.logger.Debug("Enter in usecase FindURL()")
 	smurl, err := usecase.repository.FindURL(ctx, smallUrl)
 	if err != nil {
-		usecase.logger.Error("",
-			zap.Error(err))
-		return nil, fmt.Errorf("find url error: %w", err)
+		return nil, err
 	}
 	return smurl, nil
 }
 
-func (usecase *SmurlUsecase) ReadStat(ctx context.Context, adminUrl string) (*models.Smurl, error) {
-	usecase.logger.Debug("Enter in smurlrepo func ReadStat()")
+func (usecase SmurlUsecase) ReadStat(ctx context.Context, adminUrl string) (*models.Smurl, error) {
+	usecase.logger.Debug("Enter in usecase ReadStat()")
 	smurl, err := usecase.repository.ReadStat(ctx, adminUrl)
 	if err != nil {
-		usecase.logger.Error("",
-			zap.Error(err))
-		return nil, fmt.Errorf("error on read statistics:%w", err)
+		return nil, err
 	}
 	return smurl, nil
 }

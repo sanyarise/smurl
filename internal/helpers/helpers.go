@@ -4,7 +4,6 @@ import (
 	"net"
 	"net/http"
 	"net/url"
-	"strconv"
 	"strings"
 
 	"github.com/google/uuid"
@@ -41,25 +40,6 @@ func RandString(l *zap.Logger) string {
 		builder.WriteString(string(alphabet[digit]))
 	}
 	return builder.String()
-}
-
-// CountUses increment the counter
-// transitions on a reduced url
-func CountUses(s string, l *zap.Logger) (string, error) {
-	l.Debug("Enter in func CountUses()")
-	count, err := strconv.Atoi(s)
-	if err != nil {
-		l.Error("",
-			zap.Error(err))
-		return "", err
-	}
-	l.Debug("Count",
-		zap.Int(":", count))
-	count++
-	l.Debug("Count upd",
-		zap.Int(":", count))
-	s = strconv.Itoa(count)
-	return s, nil
 }
 
 // GetIP read information about

@@ -2,14 +2,13 @@ package repository
 
 import (
 	"context"
-	"database/sql"
 	"fmt"
 	"time"
 
+	"github.com/jackc/pgx/v4/pgxpool"
+	_ "github.com/jackc/pgx/v4/stdlib"
 	"github.com/sanyarise/smurl/internal/models"
 	"github.com/sanyarise/smurl/internal/usecase"
-
-	_ "github.com/jackc/pgx/v4/stdlib"
 	"go.uber.org/zap"
 )
 
@@ -25,26 +24,37 @@ type Smurl struct {
 }
 
 type SmurlRepository struct {
-	db     *sql.DB
+	db     *pgxpool.Pool
 	logger *zap.Logger
 }
 
-func NewSmurlRepository(dsn string, logger *zap.Logger) (*SmurlRepository, error) {
+func NewSmurlRepository(dns string, logger *zap.Logger) (*SmurlRepository, error) {
 	logger.Debug("Enter in pgstore func NewSmurlStore()")
-	db, err := sql.Open("pgx", dsn)
+
+	conf, err := pgxpool.ParseConfig(dns)
 	if err != nil {
-		logger.Error("error on sql open",
-			zap.Error(err))
-		return nil, err
+		logger.Sugar().Errorf("can't init storage: %s", err)
+		return nil, fmt.Errorf("can't init storage: %w", err)
 	}
-	err = db.Ping()
+	db, err := pgxpool.ConnectConfig(context.Background(), conf)
 	if err != nil {
-		logger.Error("error on db ping",
-			zap.Error(err))
-		db.Close()
-		return nil, err
+		logger.Sugar().Errorf("can't create pool %s", err)
+		return nil, fmt.Errorf("can't create pool %w", err)
 	}
-	_, err = db.Exec(`CREATE TABLE IF NOT EXISTS smurls (
+	/*	db, err := sql.Open("pgx", dsn)
+		if err != nil {
+			logger.Error("error on sql open",
+				zap.Error(err))
+			return nil, err
+		}
+		err = db.Ping()
+		if err != nil {
+			logger.Error("error on db ping",
+				zap.Error(err))
+			db.Close()
+			return nil, err
+		}*/
+	_, err = db.Exec(context.Background(), `CREATE TABLE IF NOT EXISTS smurls (
 		small_url varchar NOT NULL,
 		created_at timestamptz NOT NULL,
 		long_url varchar NOT NULL,
@@ -58,11 +68,11 @@ func NewSmurlRepository(dsn string, logger *zap.Logger) (*SmurlRepository, error
 		db.Close()
 		return nil, err
 	}
-	su := &SmurlRepository{
+	repository := &SmurlRepository{
 		db:     db,
 		logger: logger,
 	}
-	return su, nil
+	return repository, nil
 }
 
 func (repo *SmurlRepository) Close() {
@@ -82,13 +92,13 @@ func (repo *SmurlRepository) Create(ctx context.Context, smurl models.Smurl) (*m
 		IPInfo:    []string{},
 	}
 	// Starting a transaction to write data to the database
-	tx, err := repo.db.Begin()
+	tx, err := repo.db.Begin(ctx)
 	if err != nil {
 		repo.logger.Error("error on begin transaction",
 			zap.Error(err))
 	}
 	// Write to database
-	_, err = tx.ExecContext(ctx, `INSERT INTO smurls
+	_, err = tx.Exec(ctx, `INSERT INTO smurls
 	(small_url, created_at, long_url, admin_url, count, ip_info)
 	values ($1, $2, $3, $4, $5, $6)`,
 		repositorySmurl.SmallURL,
@@ -100,16 +110,16 @@ func (repo *SmurlRepository) Create(ctx context.Context, smurl models.Smurl) (*m
 	)
 	if err != nil {
 		//Return to original value in case of unsuccessful write
-		tx.Rollback()
+		tx.Rollback(ctx)
 		repo.logger.Error("error on insert values into table",
 			zap.Error(err))
 		return nil, err
 	}
 	// End of transaction
-	tx.Commit()
+	tx.Commit(ctx)
 	repo.logger.Debug("Pgstore create smurl successfull")
 	// Return object with short and admin url
-	return &smurl.Smurl{
+	return &models.Smurl{
 		SmallURL: repositorySmurl.SmallURL,
 		AdminURL: repositorySmurl.AdminURL,
 	}, nil
@@ -124,24 +134,24 @@ func (repo *SmurlRepository) UpdateStat(ctx context.Context, smurl models.Smurl)
 		SmallURL: smurl.SmallURL,
 	}
 	// Starting a transaction to write updated data
-	tx, err := repo.db.Begin()
+	tx, err := repo.db.Begin(ctx)
 	if err != nil {
 		repo.logger.Error("error on begin transaction",
 			zap.Error(err))
 	}
 	// Write updated data
-	_, err = tx.ExecContext(ctx, `UPDATE smurls SET count = $1, ip_info = $2
+	_, err = tx.Exec(ctx, `UPDATE smurls SET count = $1, ip_info = $2
 	WHERE small_url = $3`, repositorySmurl.Count, repositorySmurl.IPInfo, repositorySmurl.SmallURL)
 	if err != nil {
 		repo.logger.Error("error on update values into table",
 			zap.Error(err))
 
 		// Return to original value in case of unsuccessful write
-		tx.Rollback()
+		tx.Rollback(ctx)
 		return err
 	}
 	// End of transaction
-	tx.Commit()
+	tx.Commit(ctx)
 	repo.logger.Debug("Pgstore update stat successfull")
 
 	return nil
@@ -152,7 +162,7 @@ func (repo *SmurlRepository) ReadStat(ctx context.Context, adminUrl string) (*mo
 	repo.logger.Debug("Enter in pgstore func ReadStat()")
 	repositorySmurl := &Smurl{}
 	// Performing a database search
-	rows, err := repo.db.QueryContext(ctx,
+	rows, err := repo.db.Query(ctx,
 		`SELECT small_url, long_url, admin_url, count, ip_info FROM smurls
 	 WHERE admin_url = $1`, adminUrl)
 	if err != nil {
@@ -174,11 +184,8 @@ func (repo *SmurlRepository) ReadStat(ctx context.Context, adminUrl string) (*mo
 			return nil, err
 		}
 	}
-	err = fmt.Errorf("admin_url: %s not found", adminUrl)
 	if repositorySmurl.AdminURL == "" {
-		repo.logger.Error("",
-			zap.Error(err))
-		return nil, err
+		return nil, models.ErrNotFound
 	}
 	result := &models.Smurl{
 		SmallURL: repositorySmurl.SmallURL,
@@ -196,36 +203,35 @@ func (repo *SmurlRepository) ReadStat(ctx context.Context, adminUrl string) (*mo
 func (repo *SmurlRepository) FindURL(ctx context.Context, smallUrl string) (*models.Smurl, error) {
 	repo.logger.Debug("Enter in pgstore func FindUrl()")
 
-	repositorySmurl := &Smurl{}
-	rows, err := repo.db.QueryContext(ctx,
+	repositorySmurl := Smurl{}
+	row := repo.db.QueryRow(ctx,
 		`SELECT small_url, long_url, count, ip_info FROM smurls WHERE small_url = $1`, smallUrl)
-	if err != nil {
-		repo.logger.Error("error on search small url into table",
+	//	if err != nil {
+	//		repo.logger.Error("error on search small url into table",
+	//			zap.Error(err))
+	//		return nil, err
+	//	}
+	//	defer rows.Close()
+	if err := row.Scan(
+		&repositorySmurl.SmallURL,
+		&repositorySmurl.LongURL,
+		&repositorySmurl.Count,
+		&repositorySmurl.IPInfo,
+	); err != nil {
+		repo.logger.Error("error find small url",
 			zap.Error(err))
 		return nil, err
 	}
-	defer rows.Close()
-	for rows.Next() {
-		if err := rows.Scan(
-			repositorySmurl.SmallURL,
-			repositorySmurl.LongURL,
-			repositorySmurl.Count,
-			repositorySmurl.IPInfo,
-		); err != nil {
-			repo.logger.Error("error find small url",
-				zap.Error(err))
-			return nil, err
-		}
-	}
+
 	if repositorySmurl.SmallURL == "" {
-		err = fmt.Errorf("small url not found")
+		err := fmt.Errorf("small url not found")
 		repo.logger.Error("",
 			zap.Error(err))
-		return nil, err
+		return nil, models.ErrNotFound
 	}
 	repo.logger.Debug("URL find successfull")
 	return &models.Smurl{
-		SmallURL: models.SmallURL,
+		SmallURL: repositorySmurl.SmallURL,
 		LongURL:  repositorySmurl.LongURL,
 		Count:    repositorySmurl.Count,
 		IPInfo:   repositorySmurl.IPInfo,

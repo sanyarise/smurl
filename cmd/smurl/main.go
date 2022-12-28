@@ -5,14 +5,14 @@ import (
 	"log"
 	"os"
 	"os/signal"
-	"smurl/config"
-	"smurl/internal/delivery"
-	"smurl/internal/infrastructure/logger"
-	"smurl/internal/infrastructure/server"
-	"smurl/internal/repository"
-	"smurl/internal/usecase"
 	"syscall"
 
+	"github.com/sanyarise/smurl/config"
+	"github.com/sanyarise/smurl/internal/delivery"
+	"github.com/sanyarise/smurl/internal/infrastructure/logger"
+	"github.com/sanyarise/smurl/internal/infrastructure/server"
+	"github.com/sanyarise/smurl/internal/repository"
+	"github.com/sanyarise/smurl/internal/usecase"
 	"go.uber.org/zap"
 )
 
@@ -38,17 +38,14 @@ func main() {
 	// Interface layer init
 	usecase := usecase.NewSmurlUsecase(repository, logger)
 
-	// Handlers init
-	handlers := delivery.NewDelivery(usecase, logger)
-
 	// Router init
-	router := delivery.NewRouter(handlers, logger, cfg.ServerURL)
+	router := delivery.NewRouter(usecase, logger, cfg.ServerURL)
 
 	// Server init
 	server := server.NewServer(":"+cfg.Port, router, logger, cfg.ReadTimeout, cfg.WriteTimeout, cfg.WriteHeaderTimeout)
 
 	// Start server
-	server.Start(smr)
+	server.Start()
 	logger.Info("Start server successfull",
 		zap.String("Port ", ":"+cfg.Port))
 
@@ -60,5 +57,5 @@ func main() {
 	cancel()
 
 	// Database shutdown
-	smst.Close()
+	repository.Close()
 }

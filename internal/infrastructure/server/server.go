@@ -5,8 +5,6 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/sanyarise/smurl/internal/usecases/repos/smurlrepo"
-
 	"go.uber.org/zap"
 )
 
@@ -37,6 +35,6 @@ func (s *Server) Stop() {
 	cancel()
 }
 
-func (s *Server) Start(smr *smurlrepo.SmurlStorage) {
+func (s *Server) Start() {
 	go s.srv.ListenAndServe()
 }
