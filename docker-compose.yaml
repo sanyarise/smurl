@@ -17,23 +17,23 @@ services:
     networks:
       - smurlnet
 
-  #smurl:
-  #  image: 127.0.0.1:5000/smurl:latest
-  #  container_name: smurl
-  #  build: .
+  smurl:
+    image: smurl:latest
+    container_name: smurl
+    build: .
    
-   # restart: always
-    #ports:
-     # - 1234:1234
-    #volumes:
-     # - ./config:/app/config
-      #- ./static:/app/static
-    #environment:
-     # DATABASE_URL: "postgres://postgres:1110@postgres/test?sslmode=disable"
-    #depends_on:
-     # - postgres
-    #networks:
-     # - smurlnet
+    restart: always
+    ports:
+      - 1234:1234
+    volumes:
+      - ./config:/app/config
+      - ./static:/app/static
+    environment:
+      DATABASE_URL: "postgres://postgres:1110@postgres/test?sslmode=disable"
+    depends_on:
+      - postgres
+    networks:
+      - smurlnet
 
 networks:
   smurlnet:
