@@ -30,8 +30,8 @@ var alphabetLen = uint32(len(alphabet))
 // CheckURL check the validity of a long url
 func (helpers *Helpers) CheckURL(longURL string) bool {
 	helpers.logger.Debug("Enter in func CheckURL()")
-	url, err := url.Parse(longURL)
-	return err == nil && url.Scheme != "" && url.Host != ""
+	url, err := url.ParseRequestURI(longURL)
+	return err == nil && url.Scheme != "" && url.Host != "" && strings.Contains(url.Host, ".")
 }
 
 // RandString generate a random string,
@@ -43,6 +43,7 @@ func (helpers *Helpers) RandString() string {
 		num     = uuid.New().ID()
 		builder strings.Builder
 	)
+
 	for num > 0 {
 		digits = append(digits, num%alphabetLen)
 		num /= alphabetLen
