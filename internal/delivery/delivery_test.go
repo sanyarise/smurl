@@ -30,22 +30,22 @@ var (
 		AdminURL: "test",
 	}
 	testSmurlWithLongUrl = &models.Smurl{
-		LongURL: "http://mail.ru",
+		LongURL:  "http://mail.ru",
 		SmallURL: "test",
 		AdminURL: "test",
 	}
 	testSmurlUpd = &models.Smurl{
-		LongURL: "http://mail.ru",
+		LongURL:  "http://mail.ru",
 		SmallURL: "test",
 		AdminURL: "test",
-		Count: 0,
-		IPInfo: []string{"testIpInfo"},
+		Count:    0,
+		IPInfo:   []string{"testIpInfo"},
 	}
 	testSmurlUpd2 = models.Smurl{
 		SmallURL: "test",
 		AdminURL: "test",
-		Count: 0,
-		IPInfo: []string{"testIpInfo"},
+		Count:    0,
+		IPInfo:   []string{"testIpInfo"},
 	}
 )
 
@@ -111,6 +111,7 @@ func TestCreate2(t *testing.T) {
 		t.Error(err)
 	}
 	require.Equal(t, 500, resp.StatusCode)
+	resp.Body.Close()
 }
 
 func TestCreate3(t *testing.T) {
@@ -128,6 +129,7 @@ func TestCreate3(t *testing.T) {
 		t.Error(err)
 	}
 	require.Equal(t, 201, resp.StatusCode)
+	resp.Body.Close()
 }
 
 func TestRedirect(t *testing.T) {
