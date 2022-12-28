@@ -25,10 +25,26 @@ var (
 		SmallURL: "test",
 		AdminURL: "test",
 	}
-	testSmurlUpd = &models.Smurl{
+	testSmurl2 = &models.Smurl{
 		SmallURL: "test",
 		AdminURL: "test",
-		Count: 1,
+	}
+	testSmurlWithLongUrl = &models.Smurl{
+		LongURL: "http://mail.ru",
+		SmallURL: "test",
+		AdminURL: "test",
+	}
+	testSmurlUpd = &models.Smurl{
+		LongURL: "http://mail.ru",
+		SmallURL: "test",
+		AdminURL: "test",
+		Count: 0,
+		IPInfo: []string{"testIpInfo"},
+	}
+	testSmurlUpd2 = models.Smurl{
+		SmallURL: "test",
+		AdminURL: "test",
+		Count: 0,
 		IPInfo: []string{"testIpInfo"},
 	}
 )
@@ -148,22 +164,104 @@ func TestRedirect2(t *testing.T) {
 	resp.Body.Close()
 }
 
-/*func TestRedirect3(t *testing.T) {
+func TestRedirect3(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
-	s := NewTestStatement(ctrl)
-	server := httptest.NewServer(s.router)
+	helpers := helpers.NewMockHelpers()
+	usecase := mocks.NewMockUsecase(ctrl)
+	logger := zap.L()
+	router := NewRouter(usecase, helpers, logger, "testUrl")
+	server := httptest.NewServer(router)
 
 	r, _ := http.NewRequest("GET", server.URL+"/r/testSmallUrl", nil)
 	client := server.Client()
-	s.usecase.EXPECT().FindURL(ctx, "testSmallUrl").Return(testSmurl, nil)
-	s.helpers.EXPECT().GetIP(r.).Return("testIpInfo")
-	s.usecase.EXPECT().UpdateStat(ctx, testSmurlUpd).Return(err)
+	usecase.EXPECT().FindURL(ctx, "testSmallUrl").Return(testSmurl2, nil)
+	usecase.EXPECT().UpdateStat(ctx, testSmurlUpd2).Return(err)
 	resp, err := client.Do(r)
 	if err != nil {
 		t.Error(err)
 	}
 	require.Equal(t, 500, resp.StatusCode)
 	resp.Body.Close()
+}
 
-}*/
+func TestRedirect4(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	helpers := helpers.NewMockHelpers()
+	usecase := mocks.NewMockUsecase(ctrl)
+	logger := zap.L()
+	router := NewRouter(usecase, helpers, logger, "testUrl")
+	server := httptest.NewServer(router)
+
+	r, _ := http.NewRequest("GET", server.URL+"/r/testSmallUrl", nil)
+	client := server.Client()
+	usecase.EXPECT().FindURL(ctx, "testSmallUrl").Return(testSmurlWithLongUrl, nil)
+	usecase.EXPECT().UpdateStat(ctx, *testSmurlUpd).Return(nil)
+	resp, err := client.Do(r)
+	if err != nil {
+		t.Error(err)
+	}
+	require.Equal(t, 200, resp.StatusCode)
+	resp.Body.Close()
+}
+
+func TestGetStat(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	helpers := helpers.NewMockHelpers()
+	usecase := mocks.NewMockUsecase(ctrl)
+	logger := zap.L()
+	router := NewRouter(usecase, helpers, logger, "testUrl")
+	server := httptest.NewServer(router)
+
+	r, _ := http.NewRequest("GET", server.URL+"/s/testAdminUrl", nil)
+	client := server.Client()
+	usecase.EXPECT().ReadStat(ctx, "testAdminUrl").Return(nil, models.ErrNotFound)
+	resp, err := client.Do(r)
+	if err != nil {
+		t.Error(err)
+	}
+	require.Equal(t, 400, resp.StatusCode)
+	resp.Body.Close()
+}
+
+func TestGetStat2(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	helpers := helpers.NewMockHelpers()
+	usecase := mocks.NewMockUsecase(ctrl)
+	logger := zap.L()
+	router := NewRouter(usecase, helpers, logger, "testUrl")
+	server := httptest.NewServer(router)
+
+	r, _ := http.NewRequest("GET", server.URL+"/s/testAdminUrl", nil)
+	client := server.Client()
+	usecase.EXPECT().ReadStat(ctx, "testAdminUrl").Return(nil, err)
+	resp, err := client.Do(r)
+	if err != nil {
+		t.Error(err)
+	}
+	require.Equal(t, 500, resp.StatusCode)
+	resp.Body.Close()
+}
+
+func TestGetStat3(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	helpers := helpers.NewMockHelpers()
+	usecase := mocks.NewMockUsecase(ctrl)
+	logger := zap.L()
+	router := NewRouter(usecase, helpers, logger, "testUrl")
+	server := httptest.NewServer(router)
+
+	r, _ := http.NewRequest("GET", server.URL+"/s/testAdminUrl", nil)
+	client := server.Client()
+	usecase.EXPECT().ReadStat(ctx, "testAdminUrl").Return(testSmurl, nil)
+	resp, err := client.Do(r)
+	if err != nil {
+		t.Error(err)
+	}
+	require.Equal(t, 200, resp.StatusCode)
+	resp.Body.Close()
+}
