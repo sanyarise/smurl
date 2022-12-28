@@ -69,3 +69,20 @@ func TestGetIP(t *testing.T) {
 		t.Errorf("error GetIP: wait %s, got %s", ip, res)
 	}
 }
+
+func TestReverse(t *testing.T) {
+	var tests = []struct {
+		value []uint32
+		expect []uint32
+	}{
+		{[]uint32{1, 2, 3}, []uint32{3, 2, 1}},
+		{[]uint32{63, 333, 643}, []uint32{643, 333, 63}},
+		{[]uint32{5, 43, 4, 6, 7}, []uint32{7, 6, 4, 43, 5}},
+		{[]uint32{1, 0}, []uint32{0, 1}},
+		{[]uint32{3, 3, 3, 4}, []uint32{4, 3, 3, 3}},
+	}
+	for i, test := range tests {
+		res := Reverse(tests[i].value)
+		assert.Equal(t, test.expect, res)
+	}
+}

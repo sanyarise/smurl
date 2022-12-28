@@ -1,6 +1,7 @@
 package delivery
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"html/template"
@@ -83,7 +84,7 @@ func (router *Router) Create(w http.ResponseWriter, r *http.Request) {
 	router.logger.Debug("URL check sucess")
 
 	// Calling usecase method to create a reduced url
-	newSmurl, err := router.usecase.Create(r.Context(), longURL)
+	newSmurl, err := router.usecase.Create(context.Background(), longURL)
 	if err != nil {
 		router.logger.Error(fmt.Sprintf("create smurl error %s: ", err))
 		err := router.ErrorPage(w, page500, status500)
@@ -107,7 +108,7 @@ func (router *Router) Create(w http.ResponseWriter, r *http.Request) {
 func (router *Router) Redirect(w http.ResponseWriter, r *http.Request) {
 	router.logger.Debug("Enter in delivery Redirect()")
 	smallUrl := chi.URLParam(r, "smallUrl")
-	ctx := r.Context()
+	ctx := context.Background()
 
 	// Search for a small url in the database
 	smurl, err := router.usecase.FindURL(ctx, smallUrl)
@@ -159,7 +160,7 @@ func (router *Router) GetStat(w http.ResponseWriter, r *http.Request) {
 	adminURL := chi.URLParam(r, "adminUrl")
 
 	// Сall the handler to get statistics
-	smurl, err := router.usecase.ReadStat(r.Context(), adminURL)
+	smurl, err := router.usecase.ReadStat(context.Background(), adminURL)
 	if err != nil {
 		if errors.Is(err, models.ErrNotFound) {
 			router.logger.Debug(fmt.Sprintf("adminUrl %s is not exist", adminURL))
@@ -212,7 +213,7 @@ func (router *Router) ResultPage(w http.ResponseWriter, page string, smurl *mode
 		outSmurl.URL = router.url
 	}
 	router.logger.Debug(fmt.Sprintf("smurlWithServerUrl: %v \n", outSmurl))
-
+	w.WriteHeader(status)
 	ts, err := template.ParseFiles(page)
 	if err != nil {
 		router.logger.Error(err.Error())
@@ -224,7 +225,6 @@ func (router *Router) ResultPage(w http.ResponseWriter, page string, smurl *mode
 		return nil
 	}
 	router.logger.Debug("Parse template success")
-	w.WriteHeader(status)
 	err = ts.Execute(w, outSmurl)
 	if err != nil {
 		router.logger.Error(err.Error())
@@ -242,12 +242,12 @@ func (router *Router) ResultPage(w http.ResponseWriter, page string, smurl *mode
 // ErrorPage display the error page
 func (router *Router) ErrorPage(w http.ResponseWriter, page string, status int) error {
 	router.logger.Debug("Enter in delivery ErrorPage()")
+	w.WriteHeader(status)
 	ts, err := template.ParseFiles(page)
 	if err != nil {
 		router.logger.Error(fmt.Sprintf("error on parse template file: %v", err))
 		return err
 	}
-	w.WriteHeader(status)
 	err = ts.Execute(w, router.url)
 	if err != nil {
 		router.logger.Error(fmt.Sprintf("error on execute template file: %v", err))

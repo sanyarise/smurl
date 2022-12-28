@@ -9,6 +9,7 @@ import (
 
 	"github.com/sanyarise/smurl/config"
 	"github.com/sanyarise/smurl/internal/delivery"
+	"github.com/sanyarise/smurl/internal/helpers"
 	"github.com/sanyarise/smurl/internal/infrastructure/logger"
 	"github.com/sanyarise/smurl/internal/infrastructure/server"
 	"github.com/sanyarise/smurl/internal/repository"
@@ -35,11 +36,12 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
+	helpers := helpers.NewHelpers(logger)
 	// Interface layer init
-	usecase := usecase.NewSmurlUsecase(repository, logger)
+	usecase := usecase.NewSmurlUsecase(repository, helpers, logger)
 
 	// Router init
-	router := delivery.NewRouter(usecase, logger, cfg.ServerURL)
+	router := delivery.NewRouter(usecase, helpers, logger, cfg.ServerURL)
 
 	// Server init
 	server := server.NewServer(":"+cfg.Port, router, logger, cfg.ReadTimeout, cfg.WriteTimeout, cfg.WriteHeaderTimeout)
