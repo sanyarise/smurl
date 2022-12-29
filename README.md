@@ -15,10 +15,10 @@ smurl (short for small url) is a service that allows the user to turn a long, cu
 Chi was chosen as a router because of its idiomatic nature, speed, compliance of handlers with the standard library, sufficiency of tools, lack of hidden context, and a large number of standard middleware.
 
 The API implements 4 main endpoints:
-- GET /-home page
-- GET /{small_url} -search for a small url, update statistics, redirect to the corresponding long address
+- GET / -home page
+- GET /r/{small_url} -search for a small url, update statistics, redirect to the corresponding long address
 - POST /create -creating a small url, creating an admin url, writing information about a small, admin and long url to the database
-- POST /stat -get statistics on clicks on the received admin url
+- GET /s/{admin_url} -get statistics on clicks on the received admin url
 
 Postgresql database selected as storage
 
