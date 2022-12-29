@@ -15,12 +15,13 @@ import (
 var _ usecase.SmurlStore = &SmurlRepository{}
 
 type Smurl struct {
-	SmallURL  string
-	CreatedAt time.Time
-	LongURL   string
-	AdminURL  string
-	IPInfo    []string
-	Count     uint64
+	SmallURL   string
+	CreatedAt  time.Time
+	ModifiedAt time.Time
+	LongURL    string
+	AdminURL   string
+	IPInfo     []string
+	Count      uint64
 }
 
 type SmurlRepository struct {
@@ -41,19 +42,6 @@ func NewSmurlRepository(dns string, logger *zap.Logger) (*SmurlRepository, error
 		logger.Sugar().Errorf("can't create pool %s", err)
 		return nil, fmt.Errorf("can't create pool %w", err)
 	}
-	/*	db, err := sql.Open("pgx", dsn)
-		if err != nil {
-			logger.Error("error on sql open",
-				zap.Error(err))
-			return nil, err
-		}
-		err = db.Ping()
-		if err != nil {
-			logger.Error("error on db ping",
-				zap.Error(err))
-			db.Close()
-			return nil, err
-		}*/
 	_, err = db.Exec(context.Background(), `CREATE TABLE IF NOT EXISTS smurls (
 		small_url varchar NOT NULL,
 		created_at timestamptz NOT NULL,
@@ -84,12 +72,13 @@ func (repo *SmurlRepository) Close() {
 func (repo *SmurlRepository) Create(ctx context.Context, smurl models.Smurl) (*models.Smurl, error) {
 	repo.logger.Debug("Enter in repository CreateURL()")
 	repositorySmurl := &Smurl{
-		LongURL:   smurl.LongURL,
-		CreatedAt: time.Now(),
-		SmallURL:  smurl.SmallURL,
-		AdminURL:  smurl.AdminURL,
-		Count:     0,
-		IPInfo:    []string{},
+		LongURL:    smurl.LongURL,
+		CreatedAt:  time.Now(),
+		ModifiedAt: time.Now(),
+		SmallURL:   smurl.SmallURL,
+		AdminURL:   smurl.AdminURL,
+		Count:      0,
+		IPInfo:     []string{},
 	}
 	// Starting a transaction to write data to the database
 	tx, err := repo.db.Begin(ctx)
@@ -99,10 +88,11 @@ func (repo *SmurlRepository) Create(ctx context.Context, smurl models.Smurl) (*m
 	}
 	// Write to database
 	_, err = tx.Exec(ctx, `INSERT INTO smurls
-	(small_url, created_at, long_url, admin_url, count, ip_info)
-	values ($1, $2, $3, $4, $5, $6)`,
+	(small_url, created_at, modified_at, long_url, admin_url, count, ip_info)
+	values ($1, $2, $3, $4, $5, $6, $7)`,
 		repositorySmurl.SmallURL,
 		repositorySmurl.CreatedAt,
+		repositorySmurl.ModifiedAt,
 		repositorySmurl.LongURL,
 		repositorySmurl.AdminURL,
 		repositorySmurl.Count,
@@ -129,9 +119,10 @@ func (repo *SmurlRepository) Create(ctx context.Context, smurl models.Smurl) (*m
 func (repo *SmurlRepository) UpdateStat(ctx context.Context, smurl models.Smurl) error {
 	repo.logger.Debug("Enter in repository UpdateStat()")
 	repositorySmurl := &Smurl{
-		Count:    smurl.Count,
-		IPInfo:   smurl.IPInfo,
-		SmallURL: smurl.SmallURL,
+		ModifiedAt: time.Now(),
+		Count:      smurl.Count,
+		IPInfo:     smurl.IPInfo,
+		SmallURL:   smurl.SmallURL,
 	}
 	// Starting a transaction to write updated data
 	tx, err := repo.db.Begin(ctx)
@@ -140,8 +131,8 @@ func (repo *SmurlRepository) UpdateStat(ctx context.Context, smurl models.Smurl)
 			zap.Error(err))
 	}
 	// Write updated data
-	_, err = tx.Exec(ctx, `UPDATE smurls SET count = $1, ip_info = $2
-	WHERE small_url = $3`, repositorySmurl.Count, repositorySmurl.IPInfo, repositorySmurl.SmallURL)
+	_, err = tx.Exec(ctx, `UPDATE smurls SET modified_at = $1, count = $2, ip_info = $3
+	WHERE small_url = $4`, repositorySmurl.ModifiedAt, repositorySmurl.Count, repositorySmurl.IPInfo, repositorySmurl.SmallURL)
 	if err != nil {
 		repo.logger.Error("error on update values into table",
 			zap.Error(err))
@@ -163,7 +154,7 @@ func (repo *SmurlRepository) ReadStat(ctx context.Context, adminUrl string) (*mo
 	repositorySmurl := &Smurl{}
 	// Performing a database search
 	rows, err := repo.db.Query(ctx,
-		`SELECT small_url, long_url, admin_url, count, ip_info FROM smurls
+		`SELECT small_url, created_at, modified_at, long_url, admin_url, count, ip_info FROM smurls
 	 WHERE admin_url = $1`, adminUrl)
 	if err != nil {
 		repo.logger.Error("error on query in table",
@@ -174,6 +165,8 @@ func (repo *SmurlRepository) ReadStat(ctx context.Context, adminUrl string) (*mo
 	for rows.Next() {
 		if err := rows.Scan(
 			&repositorySmurl.SmallURL,
+			&repositorySmurl.CreatedAt,
+			&repositorySmurl.ModifiedAt,
 			&repositorySmurl.LongURL,
 			&repositorySmurl.AdminURL,
 			&repositorySmurl.Count,
@@ -188,11 +181,13 @@ func (repo *SmurlRepository) ReadStat(ctx context.Context, adminUrl string) (*mo
 		return nil, models.ErrNotFound
 	}
 	result := &models.Smurl{
-		SmallURL: repositorySmurl.SmallURL,
-		LongURL:  repositorySmurl.LongURL,
-		AdminURL: repositorySmurl.AdminURL,
-		Count:    repositorySmurl.Count,
-		IPInfo:   repositorySmurl.IPInfo,
+		SmallURL:   repositorySmurl.SmallURL,
+		CreatedAt:  repositorySmurl.CreatedAt,
+		ModifiedAt: repositorySmurl.ModifiedAt,
+		LongURL:    repositorySmurl.LongURL,
+		AdminURL:   repositorySmurl.AdminURL,
+		Count:      repositorySmurl.Count,
+		IPInfo:     repositorySmurl.IPInfo,
 	}
 	repo.logger.Debug("Pgstore read stat successfull")
 
@@ -205,15 +200,11 @@ func (repo *SmurlRepository) FindURL(ctx context.Context, smallUrl string) (*mod
 
 	repositorySmurl := Smurl{}
 	row := repo.db.QueryRow(ctx,
-		`SELECT small_url, long_url, count, ip_info FROM smurls WHERE small_url = $1`, smallUrl)
-	//	if err != nil {
-	//		repo.logger.Error("error on search small url into table",
-	//			zap.Error(err))
-	//		return nil, err
-	//	}
-	//	defer rows.Close()
+		`SELECT small_url, created_at, modified_at, long_url, count, ip_info FROM smurls WHERE small_url = $1`, smallUrl)
 	if err := row.Scan(
 		&repositorySmurl.SmallURL,
+		&repositorySmurl.CreatedAt,
+		&repositorySmurl.ModifiedAt,
 		&repositorySmurl.LongURL,
 		&repositorySmurl.Count,
 		&repositorySmurl.IPInfo,
@@ -231,9 +222,11 @@ func (repo *SmurlRepository) FindURL(ctx context.Context, smallUrl string) (*mod
 	}
 	repo.logger.Debug("URL find successfull")
 	return &models.Smurl{
-		SmallURL: repositorySmurl.SmallURL,
-		LongURL:  repositorySmurl.LongURL,
-		Count:    repositorySmurl.Count,
-		IPInfo:   repositorySmurl.IPInfo,
+		SmallURL:   repositorySmurl.SmallURL,
+		CreatedAt:  repositorySmurl.CreatedAt,
+		ModifiedAt: repositorySmurl.ModifiedAt,
+		LongURL:    repositorySmurl.LongURL,
+		Count:      repositorySmurl.Count,
+		IPInfo:     repositorySmurl.IPInfo,
 	}, nil
 }

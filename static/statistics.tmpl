@@ -109,8 +109,12 @@ body {
             <h2>Long URL:</h2><br>
             <h2 class="smurl"><a class="url" href="{{.LongURL}}">{{.LongURL}}</a></h2><br>
             <h2>Admin URL:</h2><br>
-             <h2 class="smurl"><a class="url" href="{{.AdminURL}}">{{.AdminURL}}</a></h2><br>
-            <h2>Count:</h2><br>
+            <h2 class="smurl"><a class="url" href="{{.AdminURL}}">{{.AdminURL}}</a></h2><br>
+            <h2>Created At:</h2><br>
+            <h2 class="smurl">{{.CreatedAt}}</h2><br>
+            <h2>Modified At:</h2><br>
+            <h2 class="smurl">{{.ModifiedAt}}</h2><br>
+            <h2>Count: </h2>
             <h2 class="smurl">{{.Count}}</h2><br>
             <h2 class="smurl">IPInfo:</h2><br>
             {{range .IPInfo}}

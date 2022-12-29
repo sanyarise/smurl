@@ -25,12 +25,14 @@ const (
 )
 
 type Smurl struct {
-	SmallURL string
-	LongURL  string
-	AdminURL string
-	IPInfo   []string
-	Count    string
-	URL      string
+	CreatedAt  string
+	ModifiedAt string
+	SmallURL   string
+	LongURL    string
+	AdminURL   string
+	IPInfo     []string
+	Count      string
+	URL        string
 }
 
 // Get method displaying the start page
@@ -207,6 +209,8 @@ func (router *Router) ResultPage(w http.ResponseWriter, page string, smurl *mode
 	} else if status == status200 {
 		outSmurl.AdminURL = smurl.AdminURL
 		outSmurl.SmallURL = smurl.SmallURL
+		outSmurl.CreatedAt = smurl.CreatedAt.String()
+		outSmurl.ModifiedAt = smurl.ModifiedAt.String()
 		outSmurl.LongURL = smurl.LongURL
 		outSmurl.Count = fmt.Sprint(smurl.Count)
 		outSmurl.IPInfo = smurl.IPInfo
